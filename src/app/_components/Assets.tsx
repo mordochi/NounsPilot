@@ -161,13 +161,13 @@ export default function Assets() {
               />
 
               <Flex justifyContent="space-between" alignItems="center" mt="8px">
-                <Flex alignItems="center">
+                <Flex alignItems="center" width="20%">
                   <TokenIcon
                     name={currentToken.name}
                     symbol={currentToken.symbol || 'j'}
                     url={currentToken.logoURI}
                   />
-                  <Box ml="12px">
+                  <Box ml="8px">
                     {currentToken.balance ? (
                       <Text>
                         {balanceString.split('.')[0] +
@@ -188,8 +188,8 @@ export default function Assets() {
                   }
                 />
 
-                <Flex alignItems="center">
-                  <Box mr="12px">
+                <Flex justifyContent="flex-end" alignItems="center" width="20%">
+                  <Box mr="8px">
                     <Text>
                       Receive{' '}
                       <Text as="span" fontWeight="bold">
