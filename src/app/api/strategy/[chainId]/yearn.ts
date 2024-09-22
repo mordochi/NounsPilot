@@ -224,6 +224,19 @@ type YearnVault = {
   };
 };
 
+const getAPR = (vault: YearnVault) => {
+  let apr = floor(
+    Object.values(vault.apr.extra ?? {}).reduce((acc, value) => {
+      return (acc ?? 0) + (value ?? 0);
+    }, vault.apr.forwardAPR.netAPR),
+    2
+  );
+  if (apr === 0) {
+    apr = vault.apr.netAPR;
+  }
+  return apr;
+};
+
 export const yearn = (): DeFiProtocol => {
   let cachedVaults: YearnVault[] = [];
 
@@ -249,15 +262,7 @@ export const yearn = (): DeFiProtocol => {
     let vaults = (await response.json()) as YearnVault[];
 
     cachedVaults = vaults.filter((vault) => {
-      let apr = floor(
-        Object.values(vault.apr.extra ?? {}).reduce((acc, value) => {
-          return (acc ?? 0) + (value ?? 0);
-        }, vault.apr.forwardAPR.netAPR),
-        2
-      );
-      if (apr === 0) {
-        apr = vault.apr.netAPR;
-      }
+      const apr = getAPR(vault);
       return (
         vault.version.split('.')[0] === '3' &&
         apr > 0.05 &&
@@ -349,12 +354,7 @@ export const yearn = (): DeFiProtocol => {
 
       const riskLevel = vault.info.riskLevel;
 
-      const apr = floor(
-        Object.values(vault.apr.extra ?? {}).reduce((acc, value) => {
-          return (acc ?? 0) + (value ?? 0);
-        }, vault.apr.forwardAPR.netAPR),
-        2
-      );
+      const apr = getAPR(vault);
 
       const strategy: Strategy = {
         name: vault.type + ' ' + vault.name,
