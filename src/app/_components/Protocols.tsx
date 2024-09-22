@@ -124,6 +124,7 @@ export default function Protocols() {
           .then((res) => res.json())
           .then((res: Record<string, Strategy[]>) => {
             setStrategies(res);
+            setIsFetching(false);
           });
       });
   }, [address, chain?.id]);
