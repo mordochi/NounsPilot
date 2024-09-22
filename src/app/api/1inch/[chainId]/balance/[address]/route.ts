@@ -36,6 +36,8 @@ export async function GET(
       ([_, balance]) => balance !== '0'
     )
   );
+  if (!Object.keys(filteredbalanceData).length)
+    return Response.json({}, { status: 200 });
 
   const query = new URLSearchParams(
     Object.keys(filteredbalanceData).map((address) => ['addresses', address])

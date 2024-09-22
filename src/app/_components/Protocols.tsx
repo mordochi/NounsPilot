@@ -12,6 +12,7 @@ import { Address, formatUnits } from 'viem';
 import { useAccount } from 'wagmi';
 import AlertTriangleSharp from '@/components/icons/AlertTriangleSharp';
 import MiscTxtGMSharp from '@/components/icons/MiscTxtGMSharp';
+import NounsCatSkullSharp from '@/components/icons/NounsCatSkullSharp';
 import TrendingUpSharp from '@/components/icons/TrendingUpSharp';
 import type { DefiToken } from '@/types';
 import { Strategy } from '../api/strategy/[chainId]/types';
@@ -94,6 +95,7 @@ export default function Protocols() {
   >({});
   const [strategies, setStrategies] = useState<Record<Address, Strategy[]>>({});
   const [isFetching, setIsFetching] = useState(true);
+  const [hasNoPosition, setHasNoPosition] = useState(false);
   const { address, chain } = useAccount();
   const prefersReducedMotion = usePrefersReducedMotion();
 
@@ -109,7 +111,11 @@ export default function Protocols() {
         );
         setOwnedTokenInfos(result);
 
-        if (!Object.keys(result).length) return;
+        if (!Object.keys(result).length) {
+          setHasNoPosition(true);
+          return setIsFetching(false);
+        }
+
         const query = new URLSearchParams(
           Object.keys(result).map((address) => ['tokenAddress', address])
         );
@@ -118,7 +124,6 @@ export default function Protocols() {
           .then((res) => res.json())
           .then((res: Record<string, Strategy[]>) => {
             setStrategies(res);
-            setIsFetching(false);
           });
       });
   }, [address, chain?.id]);
@@ -152,6 +157,14 @@ export default function Protocols() {
           ▪︎▪︎▪︎
         </Text>
       </Flex>
+    );
+
+  if (hasNoPosition)
+    return (
+      <Text fontSize="30px" fontFamily="silkscreen" mt="32px">
+        Please give me money
+        <NounsCatSkullSharp boxSize="48px" fill="primary" ml="4px" />
+      </Text>
     );
 
   return (
