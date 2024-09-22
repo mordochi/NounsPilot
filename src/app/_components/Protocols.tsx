@@ -8,17 +8,38 @@ import {
   usePrefersReducedMotion,
 } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
-import { Address, formatUnits } from 'viem';
+import {
+  Address,
+  encodeFunctionData,
+  erc20Abi,
+  formatUnits,
+  parseUnits,
+} from 'viem';
+import { arbitrum } from 'viem/chains';
 import { useAccount } from 'wagmi';
+import YearnV3Vault from '@/abi/YearnV3Vault.json';
 import AlertTriangleSharp from '@/components/icons/AlertTriangleSharp';
 import MiscTxtGMSharp from '@/components/icons/MiscTxtGMSharp';
 import NounsCatSkullSharp from '@/components/icons/NounsCatSkullSharp';
 import TrendingUpSharp from '@/components/icons/TrendingUpSharp';
 import type { DefiToken } from '@/types';
+import { approveAndSwapTx } from '@/utils/approveAndSwapTx';
+import { calculateMiniReceiveAmount } from '@/utils/calculateMiniReceiveAmount';
+import {
+  getMinimumReceivedAmount,
+  prepareTakeTaxiAndAMMSwap,
+} from '@/utils/getMinimumReceivedAmount';
+import { getOperationCalldata } from '@/utils/getOperationCalldata';
+import { BridgeMode, bridgeTx, getStargatePoolToken } from '@/utils/stargate';
 import { Strategy } from '../api/strategy/[chainId]/types';
 import ProcessBar from './ProcessBar';
 import ProtocolTags from './ProtocolTags';
 import TokenIcon from './TokenIcon';
+
+const POLYGON_STARGATE_POOL_USDT = '0xd47b03ee6d86Cf251ee7860FB2ACf9f91B9fD4d7';
+const ARBITRUM_NONUS_BRIDGE_PILOT =
+  '0x587e7D2575fFD7F6D5b534E4399aDD1086aEbcd1';
+const DST_EID: bigint = 30109n;
 
 const spin = keyframes`
   0% { opacity: 0; }
@@ -132,6 +153,133 @@ export default function Protocols() {
       });
   }, [address, chain?.id]);
 
+  const handleClick =
+    (tokenAddress: Address, strategy: Strategy) => async () => {
+      if (!address || !chain) return;
+
+      const txs = [];
+
+      const currentToken =
+        ownedTokenInfos[tokenAddress.toLowerCase() as Address] || {};
+      console.log(currentToken, strategy);
+      const dstTokenAddress = await getStargatePoolToken(
+        POLYGON_STARGATE_POOL_USDT
+      );
+
+      const { txs: swapTxs, dstAmount: _dstAmount } = await approveAndSwapTx({
+        chain,
+        address,
+        value: '1',
+        selectedToken: {
+          address: currentToken.address,
+          symbol: currentToken.symbol,
+          decimals: currentToken.decimals,
+        },
+        dstTokenAddress,
+      });
+      txs.push(...swapTxs);
+
+      const inputAmount = calculateMiniReceiveAmount(_dstAmount, '0.5');
+      const destinationTokenDecimals = strategy.input.decimals;
+
+      const minimumReceivedAmount = await getMinimumReceivedAmount(
+        POLYGON_STARGATE_POOL_USDT,
+        DST_EID,
+        inputAmount,
+        ARBITRUM_NONUS_BRIDGE_PILOT
+      );
+
+      const nextInput = formatUnits(
+        minimumReceivedAmount,
+        destinationTokenDecimals
+      );
+
+      const arbitrumVaultTxs = (input: string) => {
+        const amountBN = parseUnits(input, destinationTokenDecimals);
+
+        const txs = [];
+        // approve tx
+        txs.push({
+          to: strategy.input.address,
+          value: BigInt(0),
+          data: encodeFunctionData({
+            abi: erc20Abi,
+            functionName: 'approve',
+            args: [strategy.contract.contractAddress, amountBN],
+          }),
+        });
+
+        // deposit tx
+        txs.push({
+          to: strategy.contract.contractAddress,
+          value: BigInt(0),
+          data: encodeFunctionData({
+            abi: YearnV3Vault,
+            functionName: 'deposit',
+            args: [amountBN, address],
+          }),
+        });
+
+        return txs;
+      };
+
+      const calldata = await getOperationCalldata(
+        ARBITRUM_NONUS_BRIDGE_PILOT,
+        arbitrumVaultTxs(nextInput).map((tx) => ({
+          to: tx.to,
+          value: tx.value,
+          data: tx.data || '0x',
+        }))
+      );
+
+      const query = new URLSearchParams({
+        srcEid: '30110',
+        chainId: arbitrum.id.toString(),
+        composerMessage: calldata,
+        composerAddress: ARBITRUM_NONUS_BRIDGE_PILOT,
+        tokenAddress: strategy.input.address,
+        userAddress: address,
+        minimumReceiveAmount: minimumReceivedAmount.toString(),
+      });
+
+      const estimateGasLimitRes = await fetch(`/api/estimate?` + query).then(
+        (res) => res.json()
+      );
+      const estimateGasLimit = estimateGasLimitRes.gasLimit;
+
+      const sendParam = await prepareTakeTaxiAndAMMSwap(
+        POLYGON_STARGATE_POOL_USDT,
+        DST_EID,
+        inputAmount,
+        ARBITRUM_NONUS_BRIDGE_PILOT,
+        estimateGasLimit,
+        calldata
+      );
+
+      txs.push(
+        ...(await bridgeTx({
+          fromChain: chain,
+          toChain: arbitrum,
+          tokenSymbol: strategy.input.symbol,
+          tokenDecimals: strategy.input.decimals,
+          poolAddr: POLYGON_STARGATE_POOL_USDT,
+          userAddr: address,
+          toAddr: ARBITRUM_NONUS_BRIDGE_PILOT,
+          amount: inputAmount,
+          dstEid: DST_EID,
+          mode: BridgeMode.taxi, // only taxi supports compose tx.
+          composeInfo: {
+            composeMsg: sendParam.composeMsg,
+            executorLzComposeGasLimit: estimateGasLimit,
+            rerenderFunc: async (nextInput: string) =>
+              arbitrumVaultTxs(nextInput),
+          },
+        }))
+      );
+
+      return txs;
+    };
+
   let order = -1;
 
   const aprAnimation = prefersReducedMotion
@@ -192,6 +340,14 @@ export default function Protocols() {
               my="16px"
               bg={`brand.${order % 3 === 0 ? 'light' : order % 3 === 1 ? 'dark' : 'regular'}`}
               borderRadius="10px"
+              cursor="pointer"
+              pointerEvents={
+                strategy.contract.contractAddress ===
+                '0x5108DB0852C0CAA2Df797DcF31f8A73bFb335452'
+                  ? 'auto'
+                  : 'none'
+              }
+              onClick={handleClick(tokenAddress, strategy)}
             >
               <Flex justifyContent="space-between" fontFamily="silkscreen">
                 <Text
