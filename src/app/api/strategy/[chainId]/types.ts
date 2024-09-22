@@ -17,6 +17,7 @@ export type DefiContract = {
 };
 
 export type Strategy = {
+  id: string;
   name: string;
   platformIcon: string;
   chainId: number;

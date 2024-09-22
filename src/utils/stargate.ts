@@ -229,7 +229,10 @@ export const bridgeTx = async (params: {
       amount: sendAmount,
     });
     if (approveTx) {
-      txs.push(approveTx);
+      txs.push({
+        name: `Approve ${tokenSymbol}`,
+        ...approveTx,
+      });
     }
   }
 

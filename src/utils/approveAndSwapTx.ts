@@ -48,7 +48,23 @@ const approveAndSwapTx = async ({
     dstTokenAddress,
   });
 
-  const txs = approveTx ? [approveTx, swappedTx] : [swappedTx];
+  const txs = approveTx
+    ? [
+        {
+          name: `Approve ${selectedToken.symbol}`,
+          ...approveTx,
+        },
+        {
+          name: `Swap`,
+          ...swappedTx,
+        },
+      ]
+    : [
+        {
+          name: `Swap`,
+          ...swappedTx,
+        },
+      ];
 
   return { txs, dstAmount };
 };

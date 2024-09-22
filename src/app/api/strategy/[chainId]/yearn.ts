@@ -290,6 +290,7 @@ export const yearn = (): DeFiProtocol => {
       const apr = getAPR(vault);
 
       const strategy: Strategy = {
+        id: `${Math.floor(Math.random() * 900000) + 100000}`,
         name: vault.type + ' ' + vault.name,
         chainId: vault.chainID,
         platformIcon:

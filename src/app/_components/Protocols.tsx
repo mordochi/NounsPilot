@@ -3,6 +3,7 @@
 import {
   Box,
   Flex,
+  Spinner,
   Text,
   keyframes,
   usePrefersReducedMotion,
@@ -13,10 +14,15 @@ import {
   encodeFunctionData,
   erc20Abi,
   formatUnits,
+  Hex,
   parseUnits,
 } from 'viem';
 import { arbitrum, polygon } from 'viem/chains';
-import { useAccount } from 'wagmi';
+import {
+  useAccount,
+  useSendTransaction,
+  useWaitForTransactionReceipt,
+} from 'wagmi';
 import YearnV3Vault from '@/abi/YearnV3Vault.json';
 import AlertTriangleSharp from '@/components/icons/AlertTriangleSharp';
 import MiscTxtGMSharp from '@/components/icons/MiscTxtGMSharp';
@@ -35,6 +41,7 @@ import { Strategy } from '../api/strategy/[chainId]/types';
 import ProcessBar from './ProcessBar';
 import ProtocolTags from './ProtocolTags';
 import TokenIcon from './TokenIcon';
+import TransactionBlock from './TransactionBlock';
 
 const POLYGON_STARGATE_POOL_USDT = '0xd47b03ee6d86Cf251ee7860FB2ACf9f91B9fD4d7';
 const ARBITRUM_NONUS_BRIDGE_PILOT =
@@ -54,10 +61,18 @@ const grow = keyframes`
   100% { width: 60px; }
 `;
 
+export type Tx = {
+  name: string;
+  to: Address;
+  value: bigint;
+  data: Hex;
+};
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const TEMP: Record<Address, Strategy[]> = {
   '0x6b175474e89094c44da98b954eedeac495271d0f': [
     {
+      id: '100000',
       apr: 0.07,
       chainId: 1,
       contract: {
@@ -83,6 +98,7 @@ const TEMP: Record<Address, Strategy[]> = {
       tvl: 4731769.167609766,
     },
     {
+      id: '100001',
       apr: 0.061689450401205576,
       chainId: 42161,
       contract: {
@@ -115,9 +131,14 @@ export default function Protocols() {
     Record<Address, DefiToken>
   >({});
   const [strategies, setStrategies] = useState<Record<Address, Strategy[]>>({});
+  const [strategiesLoadingMap, setStrategiesLoadingMap] = useState<
+    Record<string, boolean>
+  >({});
+  const [strategiesTxs, setStrategiesTxs] = useState<Record<string, Tx[]>>({});
   const [isFetching, setIsFetching] = useState(true);
   const [hasNoPosition, setHasNoPosition] = useState(false);
   const { address, chain } = useAccount();
+
   const prefersReducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
@@ -156,8 +177,12 @@ export default function Protocols() {
   const handleClick =
     (tokenAddress: Address, strategy: Strategy) => async () => {
       if (!address || !chain) return;
+      setStrategiesLoadingMap({
+        ...strategiesLoadingMap,
+        [strategy.id]: true,
+      });
 
-      const txs = [];
+      const txs: Tx[] = [];
 
       const currentToken =
         ownedTokenInfos[tokenAddress.toLowerCase() as Address] || {};
@@ -169,7 +194,7 @@ export default function Protocols() {
       const { txs: swapTxs, dstAmount: _dstAmount } = await approveAndSwapTx({
         chain,
         address,
-        value: '1',
+        value: '0.01',
         selectedToken: {
           address: currentToken.address,
           symbol: currentToken.symbol,
@@ -197,9 +222,10 @@ export default function Protocols() {
       const arbitrumVaultTxs = (input: string) => {
         const amountBN = parseUnits(input, destinationTokenDecimals);
 
-        const txs = [];
+        const txs: Tx[] = [];
         // approve tx
         txs.push({
+          name: `approve to spend ${strategy.input.symbol}`,
           to: strategy.input.address,
           value: BigInt(0),
           data: encodeFunctionData({
@@ -211,6 +237,7 @@ export default function Protocols() {
 
         // deposit tx
         txs.push({
+          name: `deposit ${strategy.input.symbol}`,
           to: strategy.contract.contractAddress,
           value: BigInt(0),
           data: encodeFunctionData({
@@ -226,26 +253,14 @@ export default function Protocols() {
       const calldata = await getOperationCalldata(
         ARBITRUM_NONUS_BRIDGE_PILOT,
         arbitrumVaultTxs(nextInput).map((tx) => ({
+          name: tx.name,
           to: tx.to,
           value: tx.value,
           data: tx.data || '0x',
         }))
       );
 
-      const query = new URLSearchParams({
-        srcEid: '30110',
-        chainId: arbitrum.id.toString(),
-        composerMessage: calldata,
-        composerAddress: ARBITRUM_NONUS_BRIDGE_PILOT,
-        tokenAddress: strategy.input.address,
-        userAddress: address,
-        minimumReceiveAmount: minimumReceivedAmount.toString(),
-      });
-
-      const estimateGasLimitRes = await fetch(`/api/estimate?` + query).then(
-        (res) => res.json()
-      );
-      const estimateGasLimit = estimateGasLimitRes.gasLimit;
+      const estimateGasLimit = 160000n;
 
       const sendParam = await prepareTakeTaxiAndAMMSwap(
         POLYGON_STARGATE_POOL_USDT,
@@ -256,28 +271,40 @@ export default function Protocols() {
         calldata
       );
 
+      const bridgeTxs = await bridgeTx({
+        fromChain: chain,
+        toChain: arbitrum,
+        tokenSymbol: strategy.input.symbol,
+        tokenDecimals: strategy.input.decimals,
+        poolAddr: POLYGON_STARGATE_POOL_USDT,
+        userAddr: address,
+        toAddr: ARBITRUM_NONUS_BRIDGE_PILOT,
+        amount: inputAmount,
+        dstEid: DST_EID,
+        mode: BridgeMode.taxi, // only taxi supports compose tx.
+        composeInfo: {
+          composeMsg: sendParam.composeMsg,
+          executorLzComposeGasLimit: estimateGasLimit,
+          rerenderFunc: async (nextInput: string) =>
+            arbitrumVaultTxs(nextInput),
+        },
+      }) as Tx[];
+
       txs.push(
-        ...(await bridgeTx({
-          fromChain: chain,
-          toChain: arbitrum,
-          tokenSymbol: strategy.input.symbol,
-          tokenDecimals: strategy.input.decimals,
-          poolAddr: POLYGON_STARGATE_POOL_USDT,
-          userAddr: address,
-          toAddr: ARBITRUM_NONUS_BRIDGE_PILOT,
-          amount: inputAmount,
-          dstEid: DST_EID,
-          mode: BridgeMode.taxi, // only taxi supports compose tx.
-          composeInfo: {
-            composeMsg: sendParam.composeMsg,
-            executorLzComposeGasLimit: estimateGasLimit,
-            rerenderFunc: async (nextInput: string) =>
-              arbitrumVaultTxs(nextInput),
-          },
-        }))
+        ...bridgeTxs
       );
 
-      return txs;
+      setStrategiesLoadingMap({
+        ...strategiesLoadingMap,
+        [strategy.id]: false,
+      });
+
+      setStrategiesTxs({
+        ...strategiesTxs,
+        [strategy.id]: txs,
+      });
+
+      return;
     };
 
   let order = -1;
@@ -338,7 +365,7 @@ export default function Protocols() {
               padding="16px"
               pb="calc(16px + 22px)"
               my="16px"
-              bg={`brand.${order % 3 === 0 ? 'light' : order % 3 === 1 ? 'dark' : 'regular'}`}
+              bg={`brand.${order % 3 === 1 ? 'light' : order % 3 === 2 ? 'dark' : 'regular'}`}
               borderRadius="10px"
               cursor="pointer"
               pointerEvents={
@@ -347,7 +374,11 @@ export default function Protocols() {
                   ? 'auto'
                   : 'none'
               }
-              onClick={handleClick(tokenAddress, strategy)}
+              onClick={
+                Object.keys(strategiesTxs).length
+                  ? () => {}
+                  : handleClick(tokenAddress, strategy)
+              }
             >
               <Flex justifyContent="space-between" fontFamily="silkscreen">
                 <Text
@@ -448,6 +479,31 @@ export default function Protocols() {
                   />
                 </Flex>
               </Flex>
+
+              {strategiesLoadingMap[strategy.id] === true && (
+                <Flex
+                  justifyContent="space-between"
+                  alignItems="center"
+                  mt="32px"
+                >
+                  <Spinner />
+                </Flex>
+              )}
+              {strategiesTxs[strategy.id] && (
+                <Flex
+                  justifyContent="space-between"
+                  alignItems="center"
+                  mt="32px"
+                >
+                  {strategiesTxs[strategy.id].map((tx, index) => (
+                    <TransactionBlock
+                      key={`${tx.name}-${tx.to}-${index}`}
+                      order={order}
+                      tx={tx}
+                    />
+                  ))}
+                </Flex>
+              )}
             </Box>
           );
         });
