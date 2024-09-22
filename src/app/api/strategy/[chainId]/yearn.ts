@@ -257,7 +257,7 @@ export const yearn = (): DeFiProtocol => {
       );
       return (
         vault.version.split('.')[0] === '3' &&
-        apr > 0.07 &&
+        apr > 0.05 &&
         relatedTokens.includes(getAddress(vault.token.address))
       );
     });
