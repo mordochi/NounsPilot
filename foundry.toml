@@ -1,6 +1,29 @@
 [profile.default]
+solc-version = '0.8.24'
 src = "src"
 out = "out"
-libs = ["node_modules"]
+test = 'test'
+cache_path = 'cache'
+libs = ["lib"]
 
-# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+remappings = [
+    # Due to a misconfiguration of solidity-bytes-utils, an outdated version
+    # of forge-std is being dragged in
+    # 
+    # To remedy this, we'll remap the ds-test and forge-std imports to ou own versions
+    'forge-std/=lib/forge-std/src/',
+    '@layerzerolabs/lz-evm-protocol-v2=lib/LayerZero-v2/packages/layerzero-v2/evm/protocol',
+    '@layerzerolabs/lz-evm-oapp-v2=lib/LayerZero-v2/packages/layerzero-v2/evm/oapp',
+    '@layerzerolabs/lz-evm-messagelib-v2=lib/LayerZero-v2/packages/layerzero-v2/evm/messagelib',
+    '@stargatefinance/stg-evm-v2=lib/stargate-v2/packages/stg-evm-v2',
+    '@openzeppelin/=lib/openzeppelin-contracts/',
+    'solidity-bytes-utils/=lib/solidity-bytes-utils',
+]
+
+[rpc_endpoints]
+mainnet = "${ETHERUM_RPC_URL}"
+polygon = "${POLYGON_RPC_URL}"
+
+[etherscan]
+mainnet = { key = "${ETHERSCAN_API_KEY}", url = "${ETHERSCAN_API}" }
+polygon = { key = "${POLYGONSCAN_API_KEY}", url = "${POLYGONSCAN_API}" }
