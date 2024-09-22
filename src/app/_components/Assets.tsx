@@ -134,10 +134,17 @@ export default function Assets() {
                   bg="brand.lighter"
                   borderRadius="50%"
                 >
-                  <ChakraImage
-                    src={strategy.input.tokenIconURL}
-                    alt={strategy.input.name}
-                  />
+                  {strategy.input.tokenIconURL ? (
+                    <ChakraImage
+                      src={strategy.input.tokenIconURL}
+                      alt={strategy.input.name}
+                      fallback={
+                        <Text>{strategy.input.symbol[0].toUpperCase()}</Text>
+                      }
+                    />
+                  ) : (
+                    strategy.input.symbol[0].toUpperCase()
+                  )}
                 </Center>
                 <Box ml="12px">
                   {balances[strategy.input.address.toLowerCase()] ? (
@@ -172,7 +179,7 @@ export default function Assets() {
                   bg="brand.lighter"
                   borderRadius="50%"
                 >
-                  {strategy.input.symbol[0].toUpperCase()}
+                  {strategy.output.symbol[0].toUpperCase()}
                 </Center>
               </Flex>
             </Flex>
