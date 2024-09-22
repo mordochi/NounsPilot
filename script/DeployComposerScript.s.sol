@@ -1,34 +1,32 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.24;
 
-import {Script, console} from "forge-std/Script.sol";
-import {NonusBridgePilot} from "../src/NonusBridgePilot.sol";
+import {Script, console} from 'forge-std/Script.sol';
+import {NonusBridgePilot} from '../src/NonusBridgePilot.sol';
 
 contract DeployComposerScript is Script {
-    // Endpoint addresses
-    address constant optimismSepoliaEndpoint =
-        0x6EDCE65403992e310A62460808c4b910D972f10f;
+  // Endpoint addresses
+  address constant arbitrumEndpoint =
+    0x1a44076050125825900e736c501f859c50fE728c;
 
-    address constant usdtOptimismSepolia =
-        0x9352001271a0af0d09a4e7F6C431663A2D5AA9d2;
+  // StargatePoolUSDC Arbitrum
+  address constant stargateUSDCAppArbitrum =
+    0xe8CDF27AcD73a434D661C84887215F7598e7d0d3;
 
-    address constant stargateUSDTOAppOptimismSepolia =
-        0x0d7aB83370b492f2AB096c80111381674456e8d8; // StargatePoolUSDT Optimism Sepolia
+  function setUp() public {}
 
-    function setUp() public {}
+  function run() public {
+    uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+    vm.startBroadcast(deployerPrivateKey);
 
-    function run() public {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
+    NonusBridgePilot nonusBridgePilot = new NonusBridgePilot(
+      arbitrumEndpoint,
+      stargateUSDCAppArbitrum
+    );
 
-        UniversalComposer universalComposer = new UniversalComposer(
-            optimismSepoliaEndpoint,
-            stargateUSDTOAppOptimismSepolia
-        );
+    address owner = nonusBridgePilot.owner();
+    console.log(owner);
 
-        address owner = universalComposer.owner();
-        console.log(owner);
-
-        vm.stopBroadcast();
-    }
+    vm.stopBroadcast();
+  }
 }

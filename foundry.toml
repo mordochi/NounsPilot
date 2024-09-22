@@ -23,7 +23,9 @@ remappings = [
 [rpc_endpoints]
 mainnet = "${ETHERUM_RPC_URL}"
 polygon = "${POLYGON_RPC_URL}"
+arbitrum = "${ARBITRUM_RPC_URL}"
 
 [etherscan]
 mainnet = { key = "${ETHERSCAN_API_KEY}", url = "${ETHERSCAN_API}" }
 polygon = { key = "${POLYGONSCAN_API_KEY}", url = "${POLYGONSCAN_API}" }
+arbitrum = { key = "${ARB_ETHERSCAN_API_KEY}", url = "${ARBISCAN_API}" }
