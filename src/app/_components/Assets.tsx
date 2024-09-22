@@ -13,7 +13,15 @@ export default function Assets() {
     if (!address) return;
     fetch(`/api/1inch/balance/${address}`)
       .then((res) => res.json())
-      .then(setBalances);
+      .then((addressBalances) => {
+        setBalances(
+          Object.fromEntries(
+            Object.entries<string>(addressBalances).filter(
+              ([_, balance]) => balance !== '0'
+            )
+          )
+        );
+      });
   }, [address]);
 
   useEffect(() => {
@@ -35,29 +43,27 @@ export default function Assets() {
       .then((res: Record<string, Strategy[]>) => {
         console.log(res);
       });
-  }, [balances]);
+  }, [balances, address]);
 
   return (
     <Box mt="24px">
-      {Object.keys(balances)
-        .filter((addressString) => balances[addressString] !== '0')
-        .map((tokenAddress) => (
-          <Flex
-            key={tokenAddress}
-            flex="1"
-            justifyContent="space-between"
-            padding="12px"
-          >
-            <Box>
-              <Text>Token: </Text>
-              <Text>{tokenAddress}</Text>
-            </Box>
-            <Box>
-              <Text>Balance: </Text>
-              <Text>{balances[tokenAddress]}</Text>
-            </Box>
-          </Flex>
-        ))}
+      {Object.keys(balances).map((tokenAddress) => (
+        <Flex
+          key={tokenAddress}
+          flex="1"
+          justifyContent="space-between"
+          padding="12px"
+        >
+          <Box>
+            <Text>Token: </Text>
+            <Text>{tokenAddress}</Text>
+          </Box>
+          <Box>
+            <Text>Balance: </Text>
+            <Text>{balances[tokenAddress]}</Text>
+          </Box>
+        </Flex>
+      ))}
     </Box>
   );
 }
