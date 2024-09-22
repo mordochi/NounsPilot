@@ -8,6 +8,7 @@ export default function TransactionBlock({
   ...rest
 }: { order: number; tx: Tx } & FlexProps) {
   const { data: hash, sendTransaction } = useSendTransaction();
+  console.log('hash', hash);
   const { isLoading: isConfirming, isSuccess: isConfirmed } =
     useWaitForTransactionReceipt({
       hash,
@@ -44,7 +45,6 @@ export default function TransactionBlock({
           {tx.name}
         </Text>
       </Box>
-      {hash && <Text fontWeight="bold">Transaction Hash: {hash}</Text>}
       {isConfirming && (
         <Text fontWeight="bold">Waiting for confirmation...</Text>
       )}
