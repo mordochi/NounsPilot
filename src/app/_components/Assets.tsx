@@ -60,8 +60,8 @@ export default function Assets() {
   );
 
   useEffect(() => {
-    if (!address) return;
-    fetch(`/api/1inch/balance/${address}`)
+    if (!address || !chain?.id) return;
+    fetch(`/api/1inch/${chain.id}/balance/${address}`)
       .then((res) => res.json())
       .then((addressBalances) => {
         setBalances(
@@ -72,20 +72,19 @@ export default function Assets() {
           )
         );
       });
-  }, [address]);
+  }, [address, chain?.id]);
 
   useEffect(() => {
-    if (!Object.keys(balances).length) return;
+    if (!Object.keys(balances).length || !chain?.id) return;
     const query = new URLSearchParams(
       Object.keys(balances).map((address) => ['tokenAddress', address])
     );
-    query.append('chainId', '1');
-    fetch(`/api/strategy/1?` + query)
+    fetch(`/api/strategy/${chain.id.toString()}?` + query)
       .then((res) => res.json())
       .then((res: Record<string, Strategy[]>) => {
         setStrategies(res);
       });
-  }, [balances]);
+  }, [balances, chain?.id]);
 
   return (
     <Box width="100%" mt="16px">

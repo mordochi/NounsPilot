@@ -1,13 +1,14 @@
 import { http } from 'viem';
-import { mainnet, polygon } from 'viem/chains';
+import { arbitrum, mainnet, polygon } from 'viem/chains';
 import { createConfig } from 'wagmi';
 
 const config = createConfig({
-  chains: [mainnet, polygon],
+  chains: [mainnet, polygon, arbitrum],
   multiInjectedProviderDiscovery: false,
   transports: {
     [mainnet.id]: http(),
     [polygon.id]: http(),
+    [arbitrum.id]: http(),
   },
 });
 
