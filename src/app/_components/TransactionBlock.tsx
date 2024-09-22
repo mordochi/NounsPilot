@@ -1,6 +1,6 @@
+import { Box, FlexProps, Text } from '@chakra-ui/react';
 import { useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
 import { Tx } from './Protocols';
-import { Box, FlexProps, Text } from '@chakra-ui/react';
 
 export default function TransactionBlock({
   order,
@@ -8,7 +8,6 @@ export default function TransactionBlock({
   ...rest
 }: { order: number; tx: Tx } & FlexProps) {
   const { data: hash, sendTransaction } = useSendTransaction();
-  console.log('hash', hash);
   const { isLoading: isConfirming, isSuccess: isConfirmed } =
     useWaitForTransactionReceipt({
       hash,

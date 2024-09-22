@@ -60,7 +60,6 @@ const createFork = async (
   });
 
   const result = (await response.json()) as ForkResponse;
-  console.log(result, '////', data.slug);
   const adminRpc = result.rpcs.find((rpc) => rpc.name === 'Admin RPC');
   if (!adminRpc) {
     throw new Error('Admin RPC not found in the response');

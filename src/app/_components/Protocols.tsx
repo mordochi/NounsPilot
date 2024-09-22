@@ -11,18 +11,14 @@ import {
 import { useEffect, useState } from 'react';
 import {
   Address,
+  Hex,
   encodeFunctionData,
   erc20Abi,
   formatUnits,
-  Hex,
   parseUnits,
 } from 'viem';
-import { arbitrum, polygon } from 'viem/chains';
-import {
-  useAccount,
-  useSendTransaction,
-  useWaitForTransactionReceipt,
-} from 'wagmi';
+import { arbitrum } from 'viem/chains';
+import { useAccount } from 'wagmi';
 import YearnV3Vault from '@/abi/YearnV3Vault.json';
 import AlertTriangleSharp from '@/components/icons/AlertTriangleSharp';
 import MiscTxtGMSharp from '@/components/icons/MiscTxtGMSharp';
@@ -186,7 +182,7 @@ export default function Protocols() {
 
       const currentToken =
         ownedTokenInfos[tokenAddress.toLowerCase() as Address] || {};
-      console.log(currentToken, strategy);
+
       const dstTokenAddress = await getStargatePoolToken(
         POLYGON_STARGATE_POOL_USDT
       );
@@ -284,7 +280,7 @@ export default function Protocols() {
         calldata
       );
 
-      const bridgeTxs = await bridgeTx({
+      const bridgeTxs = (await bridgeTx({
         fromChain: chain,
         toChain: arbitrum,
         tokenSymbol: strategy.input.symbol,
@@ -301,11 +297,9 @@ export default function Protocols() {
           rerenderFunc: async (nextInput: string) =>
             arbitrumVaultTxs(nextInput),
         },
-      }) as Tx[];
+      })) as Tx[];
 
-      txs.push(
-        ...bridgeTxs
-      );
+      txs.push(...bridgeTxs);
 
       setStrategiesLoadingMap({
         ...strategiesLoadingMap,
