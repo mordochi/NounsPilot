@@ -9,7 +9,9 @@ const getRelatedTokens = (
 ): Address[] => {
   // iterate through TokenAddress and return all addresses that match the groupName
   const groupName = Object.values(TokenAddress).find((token) =>
-    Object.values(token.addresses).includes(getAddress(tokenAddress) as any)
+    (Object.values(token.addresses) as Address[]).includes(
+      getAddress(tokenAddress)
+    )
   )?.groupName;
   if (!groupName) return [tokenAddress];
   return Object.values(TokenAddress)
@@ -29,6 +31,7 @@ const protocolHandler = async (chainId: number, tokenAddress: Address) => {
   return finalStrategies;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const bigIntReplacer = (_key: string, value: any) => {
   if (typeof value === 'bigint') {
     return value.toString();
@@ -67,8 +70,11 @@ export async function GET(
         headers: { 'Content-Type': 'application/json' },
       }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.log(`error: `, error);
-    return Response.json({ error: error.message }, { status: 400 });
+    return Response.json(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 400 }
+    );
   }
 }
