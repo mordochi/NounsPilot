@@ -3,7 +3,6 @@ import { AbiParameter, Address } from 'viem';
 export type DefiToken = {
   name: string;
   symbol: string;
-  tokenIconURL: string;
   address: Address;
   decimals: number;
 };
@@ -36,18 +35,3 @@ export interface DeFiProtocol {
     relatedTokens: Address[]
   ) => Promise<Strategy[]>;
 }
-
-export type OneInchTokenAsset = {
-  address: Address;
-  chainId: number;
-  decimals: number;
-  name: string;
-  symbol: string;
-  providers: string[];
-  logoURI: string;
-  eip2612: boolean;
-  tags: string[];
-  rating: number;
-};
-
-export type OneInchTokenResponse = Record<string, OneInchTokenAsset>;

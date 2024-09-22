@@ -1,27 +1,28 @@
-import { Center, Image as ChakraImage, Flex, Text } from '@chakra-ui/react';
-import Image from 'next/image';
+import { Center, Flex, Image, Text } from '@chakra-ui/react';
 import { useChainId } from 'wagmi';
 
 export default function ProcessBar({
   strategyChainId,
   strategyName,
+  isSwapNeeded,
 }: {
   strategyChainId: number;
   strategyName: string;
+  isSwapNeeded: boolean;
 }) {
   const connectedChainId = useChainId();
 
   return (
     <Flex width="50%">
-      {connectedChainId !== strategyChainId ? (
+      {connectedChainId !== strategyChainId || isSwapNeeded ? (
         <Center
-          width="80px"
+          width="100px"
           height="0px"
           borderBottom="2px dashed"
           borderColor="brand.lighter"
           position="relative"
           flexDirection="row"
-          gap="4px"
+          gap="0px"
           _before={{
             display: 'block',
             content: '""',
@@ -50,15 +51,38 @@ export default function ProcessBar({
           <Image
             src={`/images/${connectedChainId}.svg`}
             alt={`Chain icon for ${connectedChainId}`}
-            width={24}
-            height={24}
-          />
-          <ChakraImage
-            src="https://asset-images.messari.io/images/93cfc3a4-e661-43cd-8503-7a2e798d1946/64.png"
-            alt="LayerZero"
             boxSize="24px"
-            borderRadius="50%"
+            transform={
+              isSwapNeeded && connectedChainId !== strategyChainId
+                ? 'translateX(8px)'
+                : 'translateX(4px)'
+            }
           />
+          {isSwapNeeded ? (
+            <Image
+              src="/images/1inch.png"
+              alt="1inch"
+              boxSize="24px"
+              borderRadius="50%"
+              position="relative"
+              zIndex={1}
+              transform={
+                connectedChainId !== strategyChainId
+                  ? 'none'
+                  : 'translateX(-4px)'
+              }
+            />
+          ) : null}
+          {connectedChainId !== strategyChainId ? (
+            <Image
+              src="https://asset-images.messari.io/images/93cfc3a4-e661-43cd-8503-7a2e798d1946/64.png"
+              alt="LayerZero"
+              boxSize="24px"
+              borderRadius="50%"
+              transform="translateX(-8px)"
+              zIndex={2}
+            />
+          ) : null}
         </Center>
       ) : null}
 
@@ -98,8 +122,7 @@ export default function ProcessBar({
         <Image
           src={`/images/${strategyChainId}.svg`}
           alt={`Chain icon for ${strategyChainId}`}
-          width={24}
-          height={24}
+          boxSize="24px"
         />
         <Text
           display="inline-block"
