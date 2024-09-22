@@ -1,4 +1,4 @@
-import { Center } from '@chakra-ui/react';
+import { Center, Heading, Text } from '@chakra-ui/react';
 import { DynamicBridgeWidget } from '@dynamic-labs/sdk-react-core';
 // import AccountInfo from './_components/AccountInfo';
 import Assets from './_components/Assets';
@@ -13,6 +13,10 @@ export default async function Home() {
       margin="0 auto"
       flexDirection="column"
     >
+      <Heading mb="16px">NounsPilot</Heading>
+      <Text as="h3" fontSize="24px" mb="32px">
+        ⌐🧑‍✈️-🧑‍✈️
+      </Text>
       <DynamicBridgeWidget />
       {/* <AccountInfo /> */}
       <Assets />

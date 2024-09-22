@@ -4,13 +4,14 @@ import { Box, Center, Flex, Text } from '@chakra-ui/react';
 import { useEffect, useMemo, useState } from 'react';
 import { formatUnits } from 'viem';
 import { useAccount } from 'wagmi';
+import AlertTriangleDotted from '@/components/icons/AlertTriangleDotted';
 import { Strategy } from '../api/strategy/[chainId]/types';
 
 export default function Assets() {
   const [balances, setBalances] = useState<Record<string, string>>({});
   const [strategies, setStrategies] = useState<Record<string, Strategy[]>>({});
   const { address, chain } = useAccount();
-  console.log(chain);
+
   const allStrategies = useMemo(
     () => Object.values(strategies).flat(),
     // () => [
@@ -87,7 +88,7 @@ export default function Assets() {
   }, [balances]);
 
   return (
-    <Box width="100%" mt="24px">
+    <Box width="100%" mt="16px">
       {allStrategies.map((strategy, index) => {
         return (
           <Box
@@ -98,8 +99,12 @@ export default function Assets() {
             bg={`brand.${index % 2 === 0 ? 'light' : 'regular'}`}
             borderRadius="10px"
           >
-            <Flex justifyContent="space-between">
-              <Text fontWeight="bold">Risk Level: {strategy.riskLevel}</Text>
+            <Flex justifyContent="space-between" fontFamily="silkscreen">
+              <Text fontWeight="bold">
+                <AlertTriangleDotted boxSize="20px" mr="4px" />
+                Risk Level: {strategy.riskLevel}
+              </Text>
+
               <Text fontSize="14px" color="secondary">
                 <Text as="span" fontWeight="bold">
                   APR:{' '}
@@ -114,6 +119,7 @@ export default function Assets() {
                 </Text>
               </Text>
             </Flex>
+
             <Flex justifyContent="space-between" alignItems="center" mt="8px">
               <Flex alignItems="center">
                 <Center
@@ -124,7 +130,7 @@ export default function Assets() {
                 >
                   {strategy.input.symbol[0].toUpperCase()}
                 </Center>
-                <Box ml="8px">
+                <Box ml="12px">
                   <Text>From: {chain?.name}</Text>
                   {balances[strategy.input.address.toLowerCase()] ? (
                     <Text>
@@ -171,6 +177,7 @@ export default function Assets() {
               >
                 <Text
                   display="inline-block"
+                  fontWeight="bold"
                   padding="0 8px"
                   lineHeight="22px"
                   bg="brand.lighter"
@@ -182,7 +189,7 @@ export default function Assets() {
               </Center>
 
               <Flex alignItems="center">
-                <Box mr="8px">
+                <Box mr="12px">
                   <Text>To: {chain?.name}</Text>
                   <Text>
                     Receive{' '}
