@@ -66,7 +66,7 @@ const TEMP: Record<Address, Strategy[]> = {
   ],
 };
 
-export default function Assets() {
+export default function Protocols() {
   const [ownedTokenInfos, setOwnedTokenInfos] = useState<
     Record<Address, DefiToken>
   >({});

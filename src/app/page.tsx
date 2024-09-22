@@ -1,7 +1,7 @@
 import { Center, Heading, Text } from '@chakra-ui/react';
 import { DynamicBridgeWidget } from '@dynamic-labs/sdk-react-core';
 // import AccountInfo from './_components/AccountInfo';
-import Assets from './_components/Assets';
+import Protocols from './_components/Protocols';
 
 export default async function Home() {
   return (
@@ -19,7 +19,7 @@ export default async function Home() {
       </Text>
       <DynamicBridgeWidget />
       {/* <AccountInfo /> */}
-      <Assets />
+      <Protocols />
     </Center>
   );
 }
