@@ -1,12 +1,18 @@
 'use client';
 
-import { Box, Center, Flex, Text } from '@chakra-ui/react';
+import {
+  Box,
+  Center,
+  Image as ChakraImage,
+  Flex,
+  Text,
+} from '@chakra-ui/react';
 import { useEffect, useMemo, useState } from 'react';
 import { formatUnits } from 'viem';
 import { useAccount } from 'wagmi';
 import AlertTriangleDotted from '@/components/icons/AlertTriangleDotted';
 import { Strategy } from '../api/strategy/[chainId]/types';
-import Image from 'next/image';
+import ProcessBar from './ProcessBar';
 
 export default function Assets() {
   const [balances, setBalances] = useState<Record<string, string>>({});
@@ -94,6 +100,7 @@ export default function Assets() {
             key={strategy.contract.contractAddress}
             width="100%"
             padding="16px"
+            pb="calc(16px + 22px)"
             my="16px"
             bg={`brand.${index % 2 === 0 ? 'light' : 'regular'}`}
             borderRadius="10px"
@@ -127,10 +134,12 @@ export default function Assets() {
                   bg="brand.lighter"
                   borderRadius="50%"
                 >
-                  {strategy.input.symbol[0].toUpperCase()}
+                  <ChakraImage
+                    src={strategy.input.tokenIconURL}
+                    alt={strategy.input.name}
+                  />
                 </Center>
                 <Box ml="12px">
-                  <Text>From: {chain?.name}</Text>
                   {balances[strategy.input.address.toLowerCase()] ? (
                     <Text>
                       {formatUnits(
@@ -143,61 +152,13 @@ export default function Assets() {
                 </Box>
               </Flex>
 
-              <Center
-                width="50%"
-                height="0px"
-                borderBottom="2px dashed"
-                borderColor="brand.lighter"
-                position="relative"
-                flexDirection="column"
-                gap="6px"
-                _before={{
-                  display: 'block',
-                  content: '""',
-                  width: '10px',
-                  height: '10px',
-                  borderRadius: '50%',
-                  bg: 'brand.lighter',
-                  position: 'absolute',
-                  top: '50%',
-                  left: '0',
-                  transform: 'translate(-50%, calc(-50% + 1px))',
-                }}
-                _after={{
-                  display: 'block',
-                  content: '""',
-                  width: '10px',
-                  height: '10px',
-                  borderRadius: '50%',
-                  bg: 'brand.lighter',
-                  position: 'absolute',
-                  top: '50%',
-                  right: '0',
-                  transform: 'translate(50%, calc(-50% + 1px))',
-                }}
-              >
-                <Image
-                  src={`/images/${strategy.chainId}.svg`}
-                  alt={`Chain icon for ${strategy.chainId}`}
-                  width={24}
-                  height={24}
-                />
-                <Text
-                  display="inline-block"
-                  fontWeight="bold"
-                  padding="0 8px"
-                  lineHeight="22px"
-                  bg="brand.lighter"
-                  borderRadius="4px"
-                  transform="translate(0, 1px)"
-                >
-                  {strategy.name}
-                </Text>
-              </Center>
+              <ProcessBar
+                strategyChainId={strategy.chainId}
+                strategyName={strategy.name}
+              />
 
               <Flex alignItems="center">
                 <Box mr="12px">
-                  <Text>To: {chain?.name}</Text>
                   <Text>
                     Receive{' '}
                     <Text as="span" fontWeight="bold">
@@ -218,23 +179,6 @@ export default function Assets() {
           </Box>
         );
       })}
-      {/* {Object.keys(balances).map((tokenAddress) => (
-        <Flex
-          key={tokenAddress}
-          flex="1"
-          justifyContent="space-between"
-          padding="12px"
-        >
-          <Box>
-            <Text>Token: </Text>
-            <Text>{tokenAddress}</Text>
-          </Box>
-          <Box>
-            <Text>Balance: </Text>
-            <Text>{balances[tokenAddress]}</Text>
-          </Box>
-        </Flex>
-      ))} */}
     </Box>
   );
 }
