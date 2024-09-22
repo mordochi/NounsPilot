@@ -232,9 +232,7 @@ export default function Protocols() {
 
               <ProtocolTags
                 isBridgeNeeded={!!chain?.id && chain.id !== strategy.chainId}
-                isSwapNeeded={
-                  tokenAddress !== strategy.input.address.toLowerCase()
-                }
+                isSwapNeeded={currentToken.symbol !== strategy.input.symbol}
                 mt={
                   (chain?.id && chain.id !== strategy.chainId) ||
                   tokenAddress !== strategy.input.address.toLowerCase()
@@ -276,9 +274,7 @@ export default function Protocols() {
                 <ProcessBar
                   strategyChainId={strategy.chainId}
                   strategyName={strategy.name}
-                  isSwapNeeded={
-                    tokenAddress !== strategy.input.address.toLowerCase()
-                  }
+                  isSwapNeeded={currentToken.symbol !== strategy.input.symbol}
                 />
 
                 <Flex justifyContent="flex-end" alignItems="center" width="20%">
