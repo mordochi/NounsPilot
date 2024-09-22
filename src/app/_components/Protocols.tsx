@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import { Address, formatUnits } from 'viem';
 import { useAccount } from 'wagmi';
 import AlertTriangleSharp from '@/components/icons/AlertTriangleSharp';
+import MiscTxtGMSharp from '@/components/icons/MiscTxtGMSharp';
 import TrendingUpSharp from '@/components/icons/TrendingUpSharp';
 import type { DefiToken } from '@/types';
 import { Strategy } from '../api/strategy/[chainId]/types';
@@ -25,6 +26,13 @@ const spin = keyframes`
   100% { opacity: 0; }
 `;
 
+const grow = keyframes`
+  0% { width: 20px; }
+  50% { width: 40px; }
+  100% { width: 60px; }
+`;
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const TEMP: Record<Address, Strategy[]> = {
   '0x6b175474e89094c44da98b954eedeac495271d0f': [
     {
@@ -84,8 +92,8 @@ export default function Protocols() {
   const [ownedTokenInfos, setOwnedTokenInfos] = useState<
     Record<Address, DefiToken>
   >({});
-  const [strategies, setStrategies] =
-    useState<Record<Address, Strategy[]>>(TEMP);
+  const [strategies, setStrategies] = useState<Record<Address, Strategy[]>>({});
+  const [isFetching, setIsFetching] = useState(true);
   const { address, chain } = useAccount();
   const prefersReducedMotion = usePrefersReducedMotion();
 
@@ -110,18 +118,44 @@ export default function Protocols() {
           .then((res) => res.json())
           .then((res: Record<string, Strategy[]>) => {
             setStrategies(res);
+            setIsFetching(false);
           });
       });
   }, [address, chain?.id]);
 
   let order = -1;
 
-  const animation = prefersReducedMotion
+  const aprAnimation = prefersReducedMotion
     ? undefined
     : `${spin} infinite 1.5s linear`;
 
+  const loadingAnimation = prefersReducedMotion
+    ? undefined
+    : `${grow} infinite 1.5s linear`;
+
+  if (!address) return null;
+
+  if (isFetching)
+    return (
+      <Flex alignItems="flex-end" mt="32px" position="relative">
+        <MiscTxtGMSharp fill="primary" />
+        <Text
+          fontSize="40px"
+          lineHeight="65px"
+          width="20px"
+          height="65px"
+          overflow="hidden"
+          animation={loadingAnimation}
+          position="absolute"
+          left="100%"
+        >
+          ▪︎▪︎▪︎
+        </Text>
+      </Flex>
+    );
+
   return (
-    <Box width="100%" mt="16px">
+    <Box width="100%" mt="32px">
       {(Object.keys(strategies) as Address[]).map((tokenAddress) => {
         const tokenStrategies = strategies[tokenAddress];
         const currentToken =
@@ -161,7 +195,7 @@ export default function Protocols() {
                       boxSize="26px"
                       fill="secondary"
                       mr="4px"
-                      animation={animation}
+                      animation={aprAnimation}
                     />
                   ) : null}
 

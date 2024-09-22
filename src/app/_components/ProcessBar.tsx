@@ -93,7 +93,7 @@ export default function ProcessBar({
         borderColor="brand.lighter"
         position="relative"
         flexDirection="column"
-        gap="6px"
+        gap="8px"
         _before={{
           display: 'block',
           content: '""',
