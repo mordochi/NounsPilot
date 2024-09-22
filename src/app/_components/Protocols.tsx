@@ -15,7 +15,7 @@ import {
   formatUnits,
   parseUnits,
 } from 'viem';
-import { arbitrum } from 'viem/chains';
+import { arbitrum, polygon } from 'viem/chains';
 import { useAccount } from 'wagmi';
 import YearnV3Vault from '@/abi/YearnV3Vault.json';
 import AlertTriangleSharp from '@/components/icons/AlertTriangleSharp';
@@ -39,7 +39,7 @@ import TokenIcon from './TokenIcon';
 const POLYGON_STARGATE_POOL_USDT = '0xd47b03ee6d86Cf251ee7860FB2ACf9f91B9fD4d7';
 const ARBITRUM_NONUS_BRIDGE_PILOT =
   '0x587e7D2575fFD7F6D5b534E4399aDD1086aEbcd1';
-const DST_EID: bigint = 30109n;
+const DST_EID: bigint = 30110n;
 
 const spin = keyframes`
   0% { opacity: 0; }

@@ -26,7 +26,7 @@ const getError = (errorRes: any): Error => {
 };
 
 const getQuoteData = async (chainId: number, query: URLSearchParams) => {
-  const response = await fetch(`/case/api/1inch/${chainId}?` + query);
+  const response = await fetch(`/api/1inch/${chainId}?` + query);
 
   const data = await response.json();
   if (!response.ok) {
