@@ -126,10 +126,10 @@ export default function Assets() {
                 </Center>
                 <Box ml="8px">
                   <Text>From: {chain?.name}</Text>
-                  {balances[strategy.input.address] ? (
+                  {balances[strategy.input.address.toLowerCase()] ? (
                     <Text>
                       {formatUnits(
-                        BigInt(balances[strategy.input.address]),
+                        BigInt(balances[strategy.input.address.toLowerCase()]),
                         strategy.input.decimals
                       )}{' '}
                       {strategy.input.symbol} (Max)
