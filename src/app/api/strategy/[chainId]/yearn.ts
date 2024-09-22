@@ -4,10 +4,11 @@ import {
   createPublicClient,
   getAddress,
   http,
-} from 'viem'
-import { DeFiProtocol, Strategy } from './types'
-import { fetchAbi, getChain, getExplorerUrl, ScanAction } from './utils'
-import { arbitrum, mainnet, optimism, polygon } from 'viem/chains'
+} from 'viem';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { arbitrum, mainnet, optimism, polygon } from 'viem/chains';
+import { DeFiProtocol, Strategy } from './types';
+import { ScanAction, fetchAbi, getChain, getExplorerUrl } from './utils';
 
 /**
  * {
@@ -137,92 +138,92 @@ import { arbitrum, mainnet, optimism, polygon } from 'viem/chains'
     }
  */
 type YearnVault = {
-  address: Address
-  type: string
-  kind: string
-  symbol: string
-  name: string
-  category: string
-  version: string
-  description: string
-  decimals: number
-  chainID: number
+  address: Address;
+  type: string;
+  kind: string;
+  symbol: string;
+  name: string;
+  category: string;
+  version: string;
+  description: string;
+  decimals: number;
+  chainID: number;
   token: {
-    address: Address
-    name: string
-    symbol: string
-    description: string
-    decimals: number
-  }
+    address: Address;
+    name: string;
+    symbol: string;
+    description: string;
+    decimals: number;
+  };
   tvl: {
-    totalAssets: string
-    tvl: number
-    price: number
-  }
+    totalAssets: string;
+    tvl: number;
+    price: number;
+  };
   apr: {
-    type: string
-    netAPR: number
+    type: string;
+    netAPR: number;
     fees: {
-      performance: number
-      management: number
-    }
+      performance: number;
+      management: number;
+    };
     points: {
-      weekAgo: number
-      monthAgo: number
-      inception: number
-    }
+      weekAgo: number;
+      monthAgo: number;
+      inception: number;
+    };
     extra: {
-      stakingRewardAPR: number | null
-      gammaRewardAPR: number | null
-    }
+      stakingRewardAPR: number | null;
+      gammaRewardAPR: number | null;
+    };
     forwardAPR: {
-      type: string
-      netAPR: number
+      type: string;
+      netAPR: number;
       composite: {
-        boost: number | null
-        poolAPY: number | null
-        boostedAPR: number | null
-        baseAPR: number | null
-        cvxAPR: number | null
-        rewardsAPR: number | null
-        v3OracleCurrentAPR: number
-        v3OracleStratRatioAPR: number
-      }
-    }
-  }
+        boost: number | null;
+        poolAPY: number | null;
+        boostedAPR: number | null;
+        baseAPR: number | null;
+        cvxAPR: number | null;
+        rewardsAPR: number | null;
+        v3OracleCurrentAPR: number;
+        v3OracleStratRatioAPR: number;
+      };
+    };
+  };
   strategies: {
-    address: string
-    name: string
+    address: string;
+    name: string;
     details: {
-      totalDebt: string
-      totalLoss: string
-      totalGain: string
-      performanceFee: number
-      lastReport: number
-      debtRatio: number
-    }
-  }
+      totalDebt: string;
+      totalLoss: string;
+      totalGain: string;
+      performanceFee: number;
+      lastReport: number;
+      debtRatio: number;
+    };
+  };
   staking: {
-    address: Address
-    available: boolean
-    source: string
-    rewards: number | null
-  }
+    address: Address;
+    available: boolean;
+    source: string;
+    rewards: number | null;
+  };
   migration: {
-    available: boolean
-    address: string
-    contract: string
-  }
-  featuringScore: number
-  pricePerShare: string
+    available: boolean;
+    address: string;
+    contract: string;
+  };
+  featuringScore: number;
+  pricePerShare: string;
   info: {
-    riskLevel: number
-    isRetired: boolean
-    isBoosted: boolean
-    isHighlighted: boolean
-    riskScore: number[]
-  }
-}
+    riskLevel: number;
+    isRetired: boolean;
+    isBoosted: boolean;
+    isHighlighted: boolean;
+    riskScore: number[];
+  };
+};
 
 export const yearn: DeFiProtocol = {
   name: 'yearn',
@@ -240,56 +241,56 @@ export const yearn: DeFiProtocol = {
         .map((value) => value.id.toString())
         .join(','),
       limit: '50',
-    })
-    const url = `https://ydaemon.yearn.fi/vaults?` + query
+    });
+    const url = `https://ydaemon.yearn.fi/vaults?` + query;
     const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
       },
-    })
-    let vaults = (await response.json()) as YearnVault[]
+    });
+    let vaults = (await response.json()) as YearnVault[];
 
     vaults = vaults.filter((vault) => {
       return (
         vault.version.split('.')[0] === '3' &&
         vault.apr.forwardAPR.netAPR &&
         relatedTokens.includes(getAddress(vault.token.address))
-      )
-    })
+      );
+    });
 
-    const strategies: Strategy[] = []
+    const strategies: Strategy[] = [];
     for (const vault of vaults) {
-      await sleep(2000)
+      await sleep(2000);
       const requestURL = getExplorerUrl(
         chainId,
         vault.address,
         ScanAction.getSourcecode
-      )
-      const contractSourceRes = await fetch(requestURL)
-      const contractSource = await contractSourceRes.json()
+      );
+      const contractSourceRes = await fetch(requestURL);
+      const contractSource = await contractSourceRes.json();
       if (contractSource.message !== 'OK')
-        throw new Error('Failed to fetch contract source code')
+        throw new Error('Failed to fetch contract source code');
 
-      let implementationAddress = vault.address
+      let implementationAddress = vault.address;
       if (
         contractSource.result[0].Implementation &&
         contractSource.result[0].Implementation !== ''
       ) {
-        implementationAddress = contractSource.result[0].Implementation
+        implementationAddress = contractSource.result[0].Implementation;
       }
 
       const client = createPublicClient({
         chain: getChain(vault.chainID),
         transport: http(),
-      })
+      });
       const vaultAbi: AbiParameter[] = await fetchAbi(
         vault.chainID,
         getAddress(implementationAddress)
-      )
+      );
       const vaultContract = {
         address: getAddress(vault.address),
         abi: vaultAbi,
-      } as const
+      } as const;
 
       const [nameResult, symbolResult, decimalsResult] = await client.multicall(
         {
@@ -308,21 +309,21 @@ export const yearn: DeFiProtocol = {
             },
           ],
         }
-      )
+      );
       if (nameResult.status !== 'success') {
-        console.log(`nameResult: `, nameResult)
-        throw new Error('Failed to fetch name')
+        console.log(`nameResult: `, nameResult);
+        throw new Error('Failed to fetch name');
       }
       if (symbolResult.status !== 'success') {
-        console.log(`symbolResult: `, symbolResult)
-        throw new Error('Failed to fetch symbol')
+        console.log(`symbolResult: `, symbolResult);
+        throw new Error('Failed to fetch symbol');
       }
       if (decimalsResult.status !== 'success') {
-        console.log(`decimalsResult: `, decimalsResult)
-        throw new Error('Failed to fetch decimals')
+        console.log(`decimalsResult: `, decimalsResult);
+        throw new Error('Failed to fetch decimals');
       }
 
-      const risk = vault.info.riskLevel
+      const riskLevel = vault.info.riskLevel;
 
       const strategy: Strategy = {
         name: vault.type + ' ' + vault.name,
@@ -343,20 +344,20 @@ export const yearn: DeFiProtocol = {
           address: getAddress(vault.address),
           decimals: decimalsResult.result as number,
         },
-        risk,
+        riskLevel,
         tvl: vault.tvl.tvl,
         apr: vault.apr.forwardAPR.netAPR,
-      }
-      strategies.push(strategy)
+      };
+      strategies.push(strategy);
     }
 
-    return strategies
+    return strategies;
   },
-}
+};
 
 const sleep = (arg0: number) => {
   // use setTimeout to sleep
   return new Promise((resolve) => {
-    setTimeout(resolve, arg0)
-  })
-}
+    setTimeout(resolve, arg0);
+  });
+};

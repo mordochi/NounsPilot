@@ -1,5 +1,5 @@
-import { AbiParameter, Address } from 'viem'
-import * as chains from 'viem/chains'
+import { AbiParameter, Address } from 'viem';
+import * as chains from 'viem/chains';
 
 export const TokenAddress = {
   USDCe: {
@@ -30,14 +30,14 @@ export const TokenAddress = {
 } satisfies Record<
   string,
   {
-    groupName: string
-    addresses: Record<string, Address>
+    groupName: string;
+    addresses: Record<string, Address>;
   }
->
+>;
 
 export const getChain = (id: number) => {
-  return Object.values(chains).find((x) => x.id === id)
-}
+  return Object.values(chains).find((x) => x.id === id);
+};
 
 export enum ScanAction {
   getAbi = 'getabi',
@@ -51,24 +51,24 @@ export const getExplorerUrl = (
 ): string => {
   switch (chainId) {
     case chains.mainnet.id:
-      return `${process.env.ETHERSCAN_API}module=contract&action=${action}&address=${address}&apikey=${process.env.ETHERSCAN_API_KEY}`
+      return `${process.env.ETHERSCAN_API}module=contract&action=${action}&address=${address}&apikey=${process.env.ETHERSCAN_API_KEY}`;
     case chains.optimism.id:
-      return `${process.env.OPTIMISM_ETHERSCAN_API}module=contract&action=${action}&address=${address}&apikey=${process.env.OP_ETHERSCAN_API_KEY}`
+      return `${process.env.OPTIMISM_ETHERSCAN_API}module=contract&action=${action}&address=${address}&apikey=${process.env.OP_ETHERSCAN_API_KEY}`;
     case chains.polygon.id:
-      return `${process.env.POLYGONSCAN_API}module=contract&action=${action}&address=${address}&apikey=${process.env.POLYGONSCAN_API_KEY}`
+      return `${process.env.POLYGONSCAN_API}module=contract&action=${action}&address=${address}&apikey=${process.env.POLYGONSCAN_API_KEY}`;
     case chains.arbitrum.id:
-      return `${process.env.ARBISCAN_API}module=contract&action=${action}&address=${address}&apikey=${process.env.ARB_ETHERSCAN_API_KEY}`
+      return `${process.env.ARBISCAN_API}module=contract&action=${action}&address=${address}&apikey=${process.env.ARB_ETHERSCAN_API_KEY}`;
     default:
-      throw new Error('Unsupported chainId')
+      throw new Error('Unsupported chainId');
   }
-}
+};
 
 export const fetchAbi = async (
   chainId: number,
   address: Address
 ): Promise<AbiParameter[]> => {
-  const explorerUrl = getExplorerUrl(chainId, address, ScanAction.getAbi)
-  const response = await fetch(explorerUrl)
-  const data = await response.json()
-  return JSON.parse(data.result) as AbiParameter[]
-}
+  const explorerUrl = getExplorerUrl(chainId, address, ScanAction.getAbi);
+  const response = await fetch(explorerUrl);
+  const data = await response.json();
+  return JSON.parse(data.result) as AbiParameter[];
+};

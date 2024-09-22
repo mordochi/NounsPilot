@@ -1,9 +1,9 @@
 'use client';
 
 import { Box } from '@chakra-ui/react';
-import { useAccount } from 'wagmi';
 import { useUserWallets } from '@dynamic-labs/sdk-react-core';
 import { Fragment } from 'react';
+import { useAccount } from 'wagmi';
 
 export default function AccountInfo() {
   const { address, isConnected, chain } = useAccount();

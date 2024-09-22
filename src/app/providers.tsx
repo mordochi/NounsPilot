@@ -1,14 +1,14 @@
 'use client';
 
 import { ChakraProvider } from '@chakra-ui/react';
-import theme from '@/theme';
-import { DynamicContextProvider } from '@dynamic-labs/sdk-react-core';
-import { DynamicWagmiConnector } from '@dynamic-labs/wagmi-connector';
-import { WagmiProvider } from 'wagmi';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import config from '@/config';
 import { EthereumWalletConnectors } from '@dynamic-labs/ethereum';
+import { DynamicContextProvider } from '@dynamic-labs/sdk-react-core';
 import { SolanaWalletConnectors } from '@dynamic-labs/solana';
+import { DynamicWagmiConnector } from '@dynamic-labs/wagmi-connector';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { WagmiProvider } from 'wagmi';
+import config from '@/config';
+import theme from '@/theme';
 
 const queryClient = new QueryClient();
 
