@@ -36,12 +36,15 @@ const bigIntReplacer = (_key: string, value: any) => {
   return value;
 };
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const chainId = searchParams.get('chainId');
+export async function GET(
+  request: Request,
+  { params }: { params: { chainId: string } }
+) {
+  const chainId = params.chainId;
   if (!chainId) {
     return Response.json({ error: 'Chain ID is required' }, { status: 400 });
   }
+  const { searchParams } = new URL(request.url);
   const tokenAddresses = searchParams.getAll('tokenAddress') as Address[];
   if (!tokenAddresses || tokenAddresses.length === 0) {
     return Response.json(
@@ -54,7 +57,7 @@ export async function GET(request: Request) {
     const finalStrategies: Record<string, Strategy[]> = {};
     for (const address of tokenAddresses) {
       const strategies = await protocolHandler(+chainId, address);
-      finalStrategies[address] = strategies;
+      if (strategies.length) finalStrategies[address] = strategies;
     }
 
     return Response.json(

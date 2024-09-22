@@ -25,16 +25,10 @@ export default function Assets() {
   }, [address]);
 
   useEffect(() => {
-    if (!address) return;
-    if (Object.keys(balances).length === 0) return;
-
-    const balanceExists = Object.keys(balances).filter(
-      (address) => balances[address] !== '0'
-    );
-    if (balanceExists.length === 0) return;
+    if (!Object.keys(balances).length) return;
 
     const query = new URLSearchParams(
-      balanceExists.map((address) => ['tokenAddress', address])
+      Object.keys(balances).map((address) => ['tokenAddress', address])
     );
     query.append('chainId', '1');
 
@@ -43,7 +37,7 @@ export default function Assets() {
       .then((res: Record<string, Strategy[]>) => {
         console.log(res);
       });
-  }, [balances, address]);
+  }, [balances]);
 
   return (
     <Box mt="24px">
