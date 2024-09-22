@@ -10,7 +10,7 @@ import {
 import { useEffect, useState } from 'react';
 import { Address, formatUnits } from 'viem';
 import { useAccount } from 'wagmi';
-import AlertTriangleDotted from '@/components/icons/AlertTriangleDotted';
+import AlertTriangleSharp from '@/components/icons/AlertTriangleSharp';
 import TrendingUpSharp from '@/components/icons/TrendingUpSharp';
 import type { DefiToken } from '@/types';
 import { Strategy } from '../api/strategy/[chainId]/types';
@@ -87,6 +87,7 @@ export default function Protocols() {
   const [strategies, setStrategies] =
     useState<Record<Address, Strategy[]>>(TEMP);
   const { address, chain } = useAccount();
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
     if (!address || !chain?.id) return;
@@ -114,7 +115,6 @@ export default function Protocols() {
   }, [address, chain?.id]);
 
   let order = -1;
-  const prefersReducedMotion = usePrefersReducedMotion();
 
   const animation = prefersReducedMotion
     ? undefined
@@ -147,7 +147,7 @@ export default function Protocols() {
                   fontWeight="bold"
                   color={`risk.${strategy.riskLevel + 1}`}
                 >
-                  <AlertTriangleDotted
+                  <AlertTriangleSharp
                     boxSize="20px"
                     mr="4px"
                     fill={`risk.${strategy.riskLevel + 1}`}
