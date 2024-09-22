@@ -251,7 +251,7 @@ export const yearn = (): DeFiProtocol => {
       chainIDs: [mainnet, arbitrum, polygon]
         .map((value) => value.id.toString())
         .join(','),
-      limit: '500',
+      limit: '1000',
     });
     const url = `https://ydaemon.yearn.fi/vaults?` + query;
     const response = await fetch(url, {
@@ -265,7 +265,7 @@ export const yearn = (): DeFiProtocol => {
       const apr = getAPR(vault);
       return (
         vault.version.split('.')[0] === '3' &&
-        apr > 0.05 &&
+        apr > 0.01 &&
         relatedTokens
           .map((value) => value.toLowerCase())
           .includes(vault.token.address.toLowerCase())
@@ -280,77 +280,10 @@ export const yearn = (): DeFiProtocol => {
 
     const strategies: Strategy[] = [];
     for (const vault of vaults) {
-      await sleep(100);
-      const requestURL = getExplorerUrl(
-        chainId,
-        vault.address,
-        ScanAction.getSourcecode
-      );
-      const contractSourceRes = await fetch(requestURL);
-      const contractSource = await contractSourceRes.json();
-
-      if (contractSource.message !== 'OK') {
-        console.log(`contractSource: `, contractSource);
-        continue;
-      }
-
       let name = vault.name;
       let symbol = vault.symbol;
       let decimals = vault.decimals;
       let vaultAbi: AbiParameter[] = [];
-
-      if (
-        contractSource.result[0].ABI !== 'Contract source code not verified' &&
-        contractSource.result[0].SourceCode !== ''
-      ) {
-        let implementationAddress = vault.address;
-        if (
-          contractSource.result[0].Implementation &&
-          contractSource.result[0].Implementation !== ''
-        ) {
-          implementationAddress = contractSource.result[0].Implementation;
-        }
-
-        const client = createPublicClient({
-          chain: getChain(vault.chainID),
-          transport: http(),
-        });
-        vaultAbi = await fetchAbi(
-          vault.chainID,
-          getAddress(implementationAddress)
-        );
-        const vaultContract = {
-          address: getAddress(vault.address),
-          abi: vaultAbi,
-        } as const;
-
-        const [nameResult, symbolResult, decimalsResult] =
-          await client.multicall({
-            contracts: [
-              {
-                ...vaultContract,
-                functionName: 'name',
-              },
-              {
-                ...vaultContract,
-                functionName: 'symbol',
-              },
-              {
-                ...vaultContract,
-                functionName: 'decimals',
-              },
-            ],
-          });
-        if (nameResult.status === 'success') {
-          name = nameResult.result as string;
-        }
-        if (symbolResult.status === 'success') {
-          symbol = symbolResult.result as string;
-        }
-        if (decimalsResult.status === 'success') {
-          decimals = decimalsResult.result as number;
-        }
-      }
 
       const riskLevel = vault.info.riskLevel;
 
