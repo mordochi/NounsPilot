@@ -5,7 +5,7 @@ import {
   getAddress,
   http,
 } from 'viem';
-import { arbitrum, mainnet, optimism, polygon } from 'viem/chains';
+import { arbitrum, mainnet, polygon } from 'viem/chains';
 import { DeFiProtocol, Strategy } from './types';
 import { ScanAction, fetchAbi, floor, getChain, getExplorerUrl } from './utils';
 
@@ -235,10 +235,10 @@ export const yearn = (): DeFiProtocol => {
       orderDirection: 'desc',
       strategiesDetails: 'withDetails',
       strategiesCondition: 'inQueue',
-      chainIDs: [mainnet, polygon]
+      chainIDs: [mainnet, arbitrum, polygon]
         .map((value) => value.id.toString())
         .join(','),
-      limit: '100',
+      limit: '500',
     });
     const url = `https://ydaemon.yearn.fi/vaults?` + query;
     const response = await fetch(url, {
@@ -249,16 +249,21 @@ export const yearn = (): DeFiProtocol => {
     let vaults = (await response.json()) as YearnVault[];
 
     cachedVaults = vaults.filter((vault) => {
-      const apr = floor(
+      let apr = floor(
         Object.values(vault.apr.extra ?? {}).reduce((acc, value) => {
           return (acc ?? 0) + (value ?? 0);
         }, vault.apr.forwardAPR.netAPR),
         2
       );
+      if (apr === 0) {
+        apr = vault.apr.netAPR;
+      }
       return (
         vault.version.split('.')[0] === '3' &&
         apr > 0.05 &&
-        relatedTokens.includes(getAddress(vault.token.address))
+        relatedTokens
+          .map((value) => value.toLowerCase())
+          .includes(vault.token.address.toLowerCase())
       );
     });
 

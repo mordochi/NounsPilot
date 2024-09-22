@@ -6,6 +6,7 @@ import { formatUnits } from 'viem';
 import { useAccount } from 'wagmi';
 import AlertTriangleDotted from '@/components/icons/AlertTriangleDotted';
 import { Strategy } from '../api/strategy/[chainId]/types';
+import Image from 'next/image';
 
 export default function Assets() {
   const [balances, setBalances] = useState<Record<string, string>>({});
@@ -148,6 +149,8 @@ export default function Assets() {
                 borderBottom="2px dashed"
                 borderColor="brand.lighter"
                 position="relative"
+                flexDirection="column"
+                gap="6px"
                 _before={{
                   display: 'block',
                   content: '""',
@@ -173,6 +176,12 @@ export default function Assets() {
                   transform: 'translate(50%, calc(-50% + 1px))',
                 }}
               >
+                <Image
+                  src={`/images/${strategy.chainId}.svg`}
+                  alt={`Chain icon for ${strategy.chainId}`}
+                  width={24}
+                  height={24}
+                />
                 <Text
                   display="inline-block"
                   fontWeight="bold"

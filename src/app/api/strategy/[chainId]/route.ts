@@ -105,7 +105,7 @@ export async function GET(
   try {
     let finalStrategies: Record<string, Strategy[]> = {};
     for (const address of tokenAddresses) {
-      const strategies = await protocolHandler(+chainId, address);
+      const strategies = await protocolHandler(+chainId, getAddress(address));
       if (strategies.length) finalStrategies[address] = strategies;
     }
 

@@ -24,9 +24,14 @@ export async function GET(
     }
   );
 
-  const data = await response.json();
+  try {
+    const data = await response.json();
+  
+    return Response.json(data, {
+      status: 200,
+    });
+  } catch (error: any) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
 
-  return Response.json(data, {
-    status: 200,
-  });
 }
