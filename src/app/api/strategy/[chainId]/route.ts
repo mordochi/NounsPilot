@@ -60,8 +60,8 @@ const fetchTokenIcons = async (
     const query = new URLSearchParams(
       tokenAddresses.map((address) => ['tokenAddress', address])
     );
-    const baseUrl = process.env.VERCEL_URL
-      ? 'https://' + process.env.VERCEL_URL
+    const baseUrl = process.env.VERCEL_DOMAIN
+      ? 'https://' + process.env.VERCEL_DOMAIN
       : 'http://localhost:3000';
     const response = await fetch(
       `${baseUrl}/api/1inch/tokens/${chainIdString}?` + query
