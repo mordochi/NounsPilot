@@ -173,8 +173,15 @@ export const bridgeTx = async (params: {
         amount: srcTokenAmount,
       });
       if (approveTx) {
-        txs.push(approveTx);
+        txs.push({
+          name: `Approve ${tokenSymbol}`,
+          ...approveTx,
+        });
       }
+
+      // workaround for 1inch rate limit
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
       const { tx } = await swapTx({
         chainId: fromChain.id,
         userAddress: userAddr,

@@ -92,6 +92,9 @@ export const getSrcTokenAmount = async (param: {
   const srcAmount =
     (param.dstAmount * trialBase * buffer) / trialQuote / multiplier;
 
+  // workaround for 1inch rate limit
+  await new Promise((resolve) => setTimeout(resolve, 800));
+
   const base = await getQuote({
     chainId: param.chain.id,
     srcTokenAddress: param.srcTokenAddress,

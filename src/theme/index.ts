@@ -45,12 +45,13 @@ const theme = extendTheme({
       '3': '#F78A18',
       '4': '#D32A09',
     },
+    background: '#F9F4E6',
   },
   styles: {
     global: {
       body: {
         color: 'primary',
-        bg: '#F9F4E6',
+        bg: 'background',
       },
       '*': {
         boxSizing: 'border-box',

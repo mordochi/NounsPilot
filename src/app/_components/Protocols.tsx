@@ -2,8 +2,15 @@
 
 import {
   Box,
+  Button,
   Flex,
-  Spinner,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Text,
   keyframes,
   usePrefersReducedMotion,
@@ -18,7 +25,11 @@ import {
   parseUnits,
 } from 'viem';
 import { arbitrum } from 'viem/chains';
-import { useAccount } from 'wagmi';
+import {
+  useAccount,
+  useSendTransaction,
+  useWaitForTransactionReceipt,
+} from 'wagmi';
 import YearnV3Vault from '@/abi/YearnV3Vault.json';
 import AlertTriangleSharp from '@/components/icons/AlertTriangleSharp';
 import MiscTxtGMSharp from '@/components/icons/MiscTxtGMSharp';
@@ -37,7 +48,7 @@ import { Strategy } from '../api/strategy/[chainId]/types';
 import ProcessBar from './ProcessBar';
 import ProtocolTags from './ProtocolTags';
 import TokenIcon from './TokenIcon';
-import TransactionBlock from './TransactionBlock';
+// import TransactionBlock from './TransactionBlock';
 
 const POLYGON_STARGATE_POOL_USDT = '0xd47b03ee6d86Cf251ee7860FB2ACf9f91B9fD4d7';
 const ARBITRUM_NONUS_BRIDGE_PILOT =
@@ -133,9 +144,28 @@ export default function Protocols() {
   const [strategiesTxs, setStrategiesTxs] = useState<Record<string, Tx[]>>({});
   const [isFetching, setIsFetching] = useState(true);
   const [hasNoPosition, setHasNoPosition] = useState(false);
+  const [currentStrategy, setCurrentStrategy] = useState('');
+  const [currentStep, setCurrentStep] = useState(0);
+  const [error, setError] = useState('');
+  const [hasDone, setHasDone] = useState(false);
   const { address, chain } = useAccount();
-
+  const { data: hash, sendTransaction } = useSendTransaction();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash,
+    });
   const prefersReducedMotion = usePrefersReducedMotion();
+
+  useEffect(() => {
+    if (isConfirmed) {
+      if (currentStep < strategiesTxs[currentStrategy].length - 1) {
+        setCurrentStep((step) => step + 1);
+      } else {
+        setHasDone(true);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConfirmed]);
 
   useEffect(() => {
     if (!address || !chain?.id) return;
@@ -172,147 +202,161 @@ export default function Protocols() {
 
   const handleClick =
     (tokenAddress: Address, strategy: Strategy) => async () => {
-      if (!address || !chain) return;
-      setStrategiesLoadingMap({
-        ...strategiesLoadingMap,
-        [strategy.id]: true,
-      });
-
-      const txs: Tx[] = [];
-
-      const currentToken =
-        ownedTokenInfos[tokenAddress.toLowerCase() as Address] || {};
-
-      const dstTokenAddress = await getStargatePoolToken(
-        POLYGON_STARGATE_POOL_USDT
-      );
-
-      const { txs: swapTxs, dstAmount: _dstAmount } = await approveAndSwapTx({
-        chain,
-        address,
-        value: '0.01',
-        selectedToken: {
-          address: currentToken.address,
-          symbol: currentToken.symbol,
-          decimals: currentToken.decimals,
-        },
-        dstTokenAddress,
-      });
-      txs.push(...swapTxs);
-
-      const inputAmount = calculateMiniReceiveAmount(_dstAmount, '0.5');
-      const destinationTokenDecimals = strategy.input.decimals;
-
-      const minimumReceivedAmount = await getMinimumReceivedAmount(
-        POLYGON_STARGATE_POOL_USDT,
-        DST_EID,
-        inputAmount,
-        ARBITRUM_NONUS_BRIDGE_PILOT
-      );
-
-      const nextInput = formatUnits(
-        minimumReceivedAmount,
-        destinationTokenDecimals
-      );
-
-      const arbitrumVaultTxs = (input: string) => {
-        const amountBN = parseUnits(input, destinationTokenDecimals);
+      try {
+        if (!address || !chain) return;
+        setStrategiesLoadingMap({
+          ...strategiesLoadingMap,
+          [strategy.id]: true,
+        });
 
         const txs: Tx[] = [];
-        // approve tx
-        txs.push({
-          name: `approve to spend ${strategy.input.symbol}`,
-          to: strategy.input.address,
-          value: BigInt(0),
-          data: encodeFunctionData({
-            abi: erc20Abi,
-            functionName: 'approve',
-            args: [strategy.contract.contractAddress, amountBN],
-          }),
+
+        const currentToken =
+          ownedTokenInfos[tokenAddress.toLowerCase() as Address] || {};
+
+        const dstTokenAddress = await getStargatePoolToken(
+          POLYGON_STARGATE_POOL_USDT
+        );
+
+        const { txs: swapTxs, dstAmount: _dstAmount } = await approveAndSwapTx({
+          chain,
+          address,
+          value: '0.1',
+          selectedToken: {
+            address: currentToken.address,
+            symbol: currentToken.symbol,
+            decimals: currentToken.decimals,
+          },
+          dstTokenAddress,
         });
+        txs.push(...swapTxs);
 
-        // deposit tx
-        txs.push({
-          name: `deposit ${strategy.input.symbol}`,
-          to: strategy.contract.contractAddress,
-          value: BigInt(0),
-          data: encodeFunctionData({
-            abi: YearnV3Vault,
-            functionName: 'deposit',
-            args: [amountBN, address],
-          }),
+        const inputAmount = calculateMiniReceiveAmount(_dstAmount, '0.5');
+        const destinationTokenDecimals = strategy.input.decimals;
+
+        const minimumReceivedAmount = await getMinimumReceivedAmount(
+          POLYGON_STARGATE_POOL_USDT,
+          DST_EID,
+          inputAmount,
+          ARBITRUM_NONUS_BRIDGE_PILOT
+        );
+
+        const nextInput = formatUnits(
+          minimumReceivedAmount,
+          destinationTokenDecimals
+        );
+
+        const arbitrumVaultTxs = (input: string) => {
+          const amountBN = parseUnits(input, destinationTokenDecimals);
+
+          const txs: Tx[] = [];
+          // approve tx
+          txs.push({
+            name: `approve to spend ${strategy.input.symbol}`,
+            to: strategy.input.address,
+            value: BigInt(0),
+            data: encodeFunctionData({
+              abi: erc20Abi,
+              functionName: 'approve',
+              args: [strategy.contract.contractAddress, amountBN],
+            }),
+          });
+
+          // deposit tx
+          txs.push({
+            name: `deposit ${strategy.input.symbol}`,
+            to: strategy.contract.contractAddress,
+            value: BigInt(0),
+            data: encodeFunctionData({
+              abi: YearnV3Vault,
+              functionName: 'deposit',
+              args: [amountBN, address],
+            }),
+          });
+
+          return txs;
+        };
+
+        const calldata = await getOperationCalldata(
+          ARBITRUM_NONUS_BRIDGE_PILOT,
+          arbitrumVaultTxs(nextInput).map((tx) => ({
+            name: tx.name,
+            to: tx.to,
+            value: tx.value,
+            data: tx.data || '0x',
+          }))
+        );
+
+        const query = new URLSearchParams({
+          srcEid: '30110',
+          chainId: arbitrum.id.toString(),
+          composerMessage: calldata,
+          composerAddress: ARBITRUM_NONUS_BRIDGE_PILOT,
+          tokenAddress: strategy.input.address,
+          userAddress: address,
+          minimumReceiveAmount: minimumReceivedAmount.toString(),
         });
+        const estimateGasLimitRes = await fetch(`/api/estimate?` + query).then(
+          (res) => res.json()
+        );
+        const estimateGasLimit = estimateGasLimitRes.gasLimit;
 
-        return txs;
-      };
+        const sendParam = await prepareTakeTaxiAndAMMSwap(
+          POLYGON_STARGATE_POOL_USDT,
+          DST_EID,
+          inputAmount,
+          ARBITRUM_NONUS_BRIDGE_PILOT,
+          estimateGasLimit,
+          calldata
+        );
 
-      const calldata = await getOperationCalldata(
-        ARBITRUM_NONUS_BRIDGE_PILOT,
-        arbitrumVaultTxs(nextInput).map((tx) => ({
-          name: tx.name,
-          to: tx.to,
-          value: tx.value,
-          data: tx.data || '0x',
-        }))
-      );
+        const bridgeTxs = (await bridgeTx({
+          fromChain: chain,
+          toChain: arbitrum,
+          tokenSymbol: strategy.input.symbol,
+          tokenDecimals: strategy.input.decimals,
+          poolAddr: POLYGON_STARGATE_POOL_USDT,
+          userAddr: address,
+          toAddr: ARBITRUM_NONUS_BRIDGE_PILOT,
+          amount: inputAmount,
+          dstEid: DST_EID,
+          mode: BridgeMode.taxi, // only taxi supports compose tx.
+          composeInfo: {
+            composeMsg: sendParam.composeMsg,
+            executorLzComposeGasLimit: estimateGasLimit,
+            rerenderFunc: async (nextInput: string) =>
+              arbitrumVaultTxs(nextInput),
+          },
+        })) as Tx[];
 
-      const query = new URLSearchParams({
-        srcEid: '30110',
-        chainId: arbitrum.id.toString(),
-        composerMessage: calldata,
-        composerAddress: ARBITRUM_NONUS_BRIDGE_PILOT,
-        tokenAddress: strategy.input.address,
-        userAddress: address,
-        minimumReceiveAmount: minimumReceivedAmount.toString(),
-      });
+        txs.push(...bridgeTxs);
 
-      const estimateGasLimitRes = await fetch(`/api/estimate?` + query).then(
-        (res) => res.json()
-      );
-      const estimateGasLimit = estimateGasLimitRes.gasLimit;
-
-      const sendParam = await prepareTakeTaxiAndAMMSwap(
-        POLYGON_STARGATE_POOL_USDT,
-        DST_EID,
-        inputAmount,
-        ARBITRUM_NONUS_BRIDGE_PILOT,
-        estimateGasLimit,
-        calldata
-      );
-
-      const bridgeTxs = (await bridgeTx({
-        fromChain: chain,
-        toChain: arbitrum,
-        tokenSymbol: strategy.input.symbol,
-        tokenDecimals: strategy.input.decimals,
-        poolAddr: POLYGON_STARGATE_POOL_USDT,
-        userAddr: address,
-        toAddr: ARBITRUM_NONUS_BRIDGE_PILOT,
-        amount: inputAmount,
-        dstEid: DST_EID,
-        mode: BridgeMode.taxi, // only taxi supports compose tx.
-        composeInfo: {
-          composeMsg: sendParam.composeMsg,
-          executorLzComposeGasLimit: estimateGasLimit,
-          rerenderFunc: async (nextInput: string) =>
-            arbitrumVaultTxs(nextInput),
-        },
-      })) as Tx[];
-
-      txs.push(...bridgeTxs);
-
-      setStrategiesLoadingMap({
-        ...strategiesLoadingMap,
-        [strategy.id]: false,
-      });
-
-      setStrategiesTxs({
-        ...strategiesTxs,
-        [strategy.id]: txs,
-      });
-
-      return;
+        setStrategiesLoadingMap({
+          ...strategiesLoadingMap,
+          [strategy.id]: false,
+        });
+        setStrategiesTxs({
+          ...strategiesTxs,
+          [strategy.id]: txs,
+        });
+        setCurrentStrategy(strategy.id);
+      } catch (error) {
+        setError(
+          error instanceof Error
+            ? error.message
+            : 'Something went wrongwrong :('
+        );
+      }
     };
+
+  const handleSendCurrentTx = () => {
+    const tx = strategiesTxs?.[currentStrategy]?.[currentStep];
+    sendTransaction({
+      to: tx.to,
+      value: tx.value,
+      data: tx.data,
+    });
+  };
 
   let order = -1;
 
@@ -487,7 +531,7 @@ export default function Protocols() {
                 </Flex>
               </Flex>
 
-              {strategiesLoadingMap[strategy.id] === true && (
+              {/* {strategiesLoadingMap[strategy.id] === true && (
                 <Flex
                   justifyContent="space-between"
                   alignItems="center"
@@ -495,8 +539,8 @@ export default function Protocols() {
                 >
                   <Spinner />
                 </Flex>
-              )}
-              {strategiesTxs[strategy.id] && (
+              )} */}
+              {/* {strategiesTxs[strategy.id] && (
                 <Flex
                   justifyContent="space-between"
                   alignItems="center"
@@ -510,11 +554,84 @@ export default function Protocols() {
                     />
                   ))}
                 </Flex>
-              )}
+              )} */}
             </Box>
           );
         });
       })}
+      <Modal
+        isOpen={
+          !!currentStrategy ||
+          !!error ||
+          Object.values(strategiesLoadingMap).some((loading) => loading)
+        }
+        onClose={() => {
+          setError('');
+          setStrategiesLoadingMap((map) => {
+            const key = Object.keys(map).find((key) => map[key]);
+            return {
+              ...map,
+              ...(key ? { [key]: false } : {}),
+            };
+          });
+          setCurrentStrategy('');
+        }}
+        isCentered
+      >
+        <ModalOverlay />
+        {currentStrategy || error ? (
+          <ModalContent bg="background" textAlign="center">
+            <ModalHeader fontFamily="silkscreen" pt="32px">
+              {error
+                ? 'Something went wrong :('
+                : hasDone
+                  ? 'Congrats!'
+                  : 'Approve Your Txs'}
+            </ModalHeader>
+            <ModalCloseButton />
+            <ModalBody py="0" whiteSpace="pre-wrap">
+              {error
+                ? error +
+                  "\n\nPlease be patient with us, and we'll soon make it available ⌐♥-♥"
+                : hasDone
+                  ? `You've arrived safely where you wanted to go 🛬\ntxHash: ${hash}`
+                  : 'Please confirm the following transactions in your wallet ⌐🅃-🅇'}
+            </ModalBody>
+
+            <ModalFooter>
+              <Button
+                width="100%"
+                bg="brand.dark"
+                color="secondary"
+                isLoading={isConfirming}
+                isDisabled={isConfirming}
+                _hover={{
+                  _disabled: { bg: 'brand.dark' },
+                }}
+                onClick={
+                  error || hasDone
+                    ? () => {
+                        setError('');
+                        setStrategiesLoadingMap((map) => {
+                          const key = Object.keys(map).find((key) => map[key]);
+                          return {
+                            ...map,
+                            ...(key ? { [key]: false } : {}),
+                          };
+                        });
+                        setCurrentStrategy('');
+                      }
+                    : handleSendCurrentTx
+                }
+              >
+                {error || hasDone
+                  ? 'Close'
+                  : strategiesTxs?.[currentStrategy]?.[currentStep]?.name}
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        ) : null}
+      </Modal>
     </Box>
   );
 }
