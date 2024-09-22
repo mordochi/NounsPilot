@@ -260,7 +260,20 @@ export default function Protocols() {
         }))
       );
 
-      const estimateGasLimit = 160000n;
+      const query = new URLSearchParams({
+        srcEid: '30110',
+        chainId: arbitrum.id.toString(),
+        composerMessage: calldata,
+        composerAddress: ARBITRUM_NONUS_BRIDGE_PILOT,
+        tokenAddress: strategy.input.address,
+        userAddress: address,
+        minimumReceiveAmount: minimumReceivedAmount.toString(),
+      });
+
+      const estimateGasLimitRes = await fetch(`/api/estimate?` + query).then(
+        (res) => res.json()
+      );
+      const estimateGasLimit = estimateGasLimitRes.gasLimit;
 
       const sendParam = await prepareTakeTaxiAndAMMSwap(
         POLYGON_STARGATE_POOL_USDT,
