@@ -13,7 +13,10 @@ export default async function Home() {
       margin="0 auto"
       flexDirection="column"
     >
-      <Heading mb="16px">NounsPilot</Heading>
+      <Heading mb="4px">NounsPilot</Heading>
+      <Text as="h3" fontSize="16px" mb="16px" fontWeight="bold">
+        Just sit back and watch your funds grow
+      </Text>
       <Text as="h3" fontSize="24px" mb="32px">
         ⌐🧑‍✈️-🧑‍✈️
       </Text>

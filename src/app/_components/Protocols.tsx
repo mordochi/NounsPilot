@@ -1,15 +1,29 @@
 'use client';
 
-import { Box, Flex, Text } from '@chakra-ui/react';
+import {
+  Box,
+  Flex,
+  Text,
+  keyframes,
+  usePrefersReducedMotion,
+} from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { Address, formatUnits } from 'viem';
 import { useAccount } from 'wagmi';
 import AlertTriangleDotted from '@/components/icons/AlertTriangleDotted';
+import TrendingUpSharp from '@/components/icons/TrendingUpSharp';
 import type { DefiToken } from '@/types';
 import { Strategy } from '../api/strategy/[chainId]/types';
 import ProcessBar from './ProcessBar';
 import ProtocolTags from './ProtocolTags';
 import TokenIcon from './TokenIcon';
+
+const spin = keyframes`
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+`;
 
 const TEMP: Record<Address, Strategy[]> = {
   '0x6b175474e89094c44da98b954eedeac495271d0f': [
@@ -99,6 +113,13 @@ export default function Protocols() {
       });
   }, [address, chain?.id]);
 
+  let order = -1;
+  const prefersReducedMotion = usePrefersReducedMotion();
+
+  const animation = prefersReducedMotion
+    ? undefined
+    : `${spin} infinite 1.5s linear`;
+
   return (
     <Box width="100%" mt="16px">
       {(Object.keys(strategies) as Address[]).map((tokenAddress) => {
@@ -109,7 +130,8 @@ export default function Protocols() {
           BigInt(currentToken.balance || 0),
           currentToken.decimals
         );
-        return tokenStrategies.map((strategy, index) => {
+        return tokenStrategies.map((strategy) => {
+          order++;
           return (
             <Box
               key={`${tokenAddress}-${strategy.contract.contractAddress}`}
@@ -117,16 +139,32 @@ export default function Protocols() {
               padding="16px"
               pb="calc(16px + 22px)"
               my="16px"
-              bg={`brand.${index % 2 === 0 ? 'light' : 'regular'}`}
+              bg={`brand.${order % 3 === 0 ? 'light' : order % 3 === 1 ? 'dark' : 'regular'}`}
               borderRadius="10px"
             >
               <Flex justifyContent="space-between" fontFamily="silkscreen">
-                <Text fontWeight="bold">
-                  <AlertTriangleDotted boxSize="20px" mr="4px" fill="primary" />
+                <Text
+                  fontWeight="bold"
+                  color={`risk.${strategy.riskLevel + 1}`}
+                >
+                  <AlertTriangleDotted
+                    boxSize="20px"
+                    mr="4px"
+                    fill={`risk.${strategy.riskLevel + 1}`}
+                  />
                   Risk Level: {strategy.riskLevel}
                 </Text>
 
                 <Text fontSize="14px" color="secondary">
+                  {strategy.apr > 0.2 ? (
+                    <TrendingUpSharp
+                      boxSize="26px"
+                      fill="secondary"
+                      mr="4px"
+                      animation={animation}
+                    />
+                  ) : null}
+
                   <Text as="span" fontWeight="bold">
                     APR:{' '}
                     {new Intl.NumberFormat('en', {
@@ -160,7 +198,11 @@ export default function Protocols() {
                 }
               />
 
-              <Flex justifyContent="space-between" alignItems="center" mt="8px">
+              <Flex
+                justifyContent="space-between"
+                alignItems="center"
+                mt="32px"
+              >
                 <Flex alignItems="center" width="20%">
                   <TokenIcon
                     name={currentToken.name}

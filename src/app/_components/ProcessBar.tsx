@@ -129,7 +129,7 @@ export default function ProcessBar({
           fontWeight="bold"
           padding="0 8px"
           lineHeight="22px"
-          bg="brand.lighter"
+          bg="brand.lighter.800"
           borderRadius="4px"
           transform="translate(0, 1px)"
         >
