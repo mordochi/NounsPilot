@@ -266,7 +266,6 @@ export const yearn = (): DeFiProtocol => {
       return (
         vault.version.split('.')[0] === '3' &&
         apr > 0.01 &&
-        vault.tvl.tvl > 3000 &&
         relatedTokens
           .map((value) => value.toLowerCase())
           .includes(vault.token.address.toLowerCase())
