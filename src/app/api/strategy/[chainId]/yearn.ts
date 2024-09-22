@@ -259,7 +259,7 @@ export const yearn = (): DeFiProtocol => {
         'Content-Type': 'application/json',
       },
     });
-    let vaults = (await response.json()) as YearnVault[];
+    const vaults = (await response.json()) as YearnVault[];
 
     cachedVaults = vaults.filter((vault) => {
       const apr = getAPR(vault);
@@ -364,7 +364,6 @@ export const yearn = (): DeFiProtocol => {
         input: {
           name: vault.token.name,
           symbol: vault.token.symbol,
-          tokenIconURL: '',
           address: getAddress(vault.token.address),
           decimals: vault.token.decimals,
         },
@@ -375,7 +374,6 @@ export const yearn = (): DeFiProtocol => {
         output: {
           name,
           symbol,
-          tokenIconURL: '',
           address: getAddress(vault.address),
           decimals,
         },
