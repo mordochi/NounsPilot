@@ -123,6 +123,9 @@ export default function Protocols() {
         fetch(`/api/strategy/${chain.id.toString()}?` + query)
           .then((res) => res.json())
           .then((res: Record<string, Strategy[]>) => {
+            Object.keys(res).forEach((tokenAddress) =>
+              res[tokenAddress].sort((a, b) => b.apr - a.apr)
+            );
             setStrategies(res);
             setIsFetching(false);
           });
