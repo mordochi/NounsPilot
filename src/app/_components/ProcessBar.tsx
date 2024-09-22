@@ -93,7 +93,7 @@ export default function ProcessBar({
         borderColor="brand.lighter"
         position="relative"
         flexDirection="column"
-        gap="8px"
+        gap="10px"
         _before={{
           display: 'block',
           content: '""',
@@ -131,7 +131,6 @@ export default function ProcessBar({
           lineHeight="22px"
           bg="brand.lighter.800"
           borderRadius="4px"
-          transform="translate(0, 1px)"
         >
           {strategyName}
         </Text>

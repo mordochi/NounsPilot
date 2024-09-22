@@ -18,6 +18,7 @@ export default function TokenIcon({
       borderRadius="50%"
       color="brand.regular"
       fontWeight="bold"
+      overflow="hidden"
     >
       {url ? (
         <Image
