@@ -3,14 +3,14 @@ import * as chains from 'viem/chains';
 
 export const TokenAddress = {
   USDCe: {
-    groupName: 'USDC',
+    groupName: 'stablecoin',
     addresses: {
       Polygon: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
       Arbitrum: '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8',
     },
   },
   USDC: {
-    groupName: 'USDC',
+    groupName: 'stablecoin',
     addresses: {
       Mainnet: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
       Polygon: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359',
@@ -19,13 +19,19 @@ export const TokenAddress = {
     },
   },
   USDT: {
-    groupName: 'USDT',
+    groupName: 'stablecoin',
     addresses: {
       Mainnet: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
       Polygon: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
       Arbitrum: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
       Optimism: '0x94b008aA00579c1307B0EF2c499aD98a8ce58e58',
     },
+  },
+  DAI: {
+    groupName: 'stablecoin',
+    addresses: {
+      Mainnet: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+    }
   },
 } satisfies Record<
   string,
@@ -72,3 +78,7 @@ export const fetchAbi = async (
   const data = await response.json();
   return JSON.parse(data.result) as AbiParameter[];
 };
+
+export const floor = (value: number | null, decimals: number): number => {
+  return Math.floor((value ?? 0) * 10 ** decimals) / 10 ** decimals;
+}

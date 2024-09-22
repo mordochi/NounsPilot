@@ -5,10 +5,9 @@ import {
   getAddress,
   http,
 } from 'viem';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { arbitrum, mainnet, optimism, polygon } from 'viem/chains';
 import { DeFiProtocol, Strategy } from './types';
-import { ScanAction, fetchAbi, getChain, getExplorerUrl } from './utils';
+import { ScanAction, fetchAbi, floor, getChain, getExplorerUrl } from './utils';
 
 /**
  * {
@@ -172,7 +171,7 @@ type YearnVault = {
       monthAgo: number;
       inception: number;
     };
-    extra: {
+    extra?: {
       stakingRewardAPR: number | null;
       gammaRewardAPR: number | null;
     };
@@ -225,22 +224,21 @@ type YearnVault = {
   };
 };
 
-export const yearn: DeFiProtocol = {
-  name: 'yearn',
-  getStrategies: async (chainId: number, relatedTokens: Address[]) => {
+export const yearn = (): DeFiProtocol => {
+  let cachedVaults: YearnVault[] = [];
+
+  const getVaults = async (relatedTokens: Address[]) => {
+    if (cachedVaults.length) return cachedVaults;
     const query = new URLSearchParams({
       hideAlways: 'true',
       orderBy: 'featuringScore',
       orderDirection: 'desc',
       strategiesDetails: 'withDetails',
       strategiesCondition: 'inQueue',
-      chainIDs: [
-        mainnet,
-        // , polygon, optimism, arbitrum
-      ]
+      chainIDs: [mainnet, polygon]
         .map((value) => value.id.toString())
         .join(','),
-      limit: '50',
+      limit: '100',
     });
     const url = `https://ydaemon.yearn.fi/vaults?` + query;
     const response = await fetch(url, {
@@ -250,17 +248,29 @@ export const yearn: DeFiProtocol = {
     });
     let vaults = (await response.json()) as YearnVault[];
 
-    vaults = vaults.filter((vault) => {
+    cachedVaults = vaults.filter((vault) => {
+      const apr = floor(
+        Object.values(vault.apr.extra ?? {}).reduce((acc, value) => {
+          return (acc ?? 0) + (value ?? 0);
+        }, vault.apr.forwardAPR.netAPR),
+        2
+      );
       return (
         vault.version.split('.')[0] === '3' &&
-        vault.apr.forwardAPR.netAPR &&
+        apr > 0.07 &&
         relatedTokens.includes(getAddress(vault.token.address))
       );
     });
 
+    return cachedVaults;
+  };
+
+  const getStrategies = async (chainId: number, relatedTokens: Address[]) => {
+    const vaults = await getVaults(relatedTokens);
+
     const strategies: Strategy[] = [];
     for (const vault of vaults) {
-      await sleep(2000);
+      await sleep(100);
       const requestURL = getExplorerUrl(
         chainId,
         vault.address,
@@ -268,69 +278,88 @@ export const yearn: DeFiProtocol = {
       );
       const contractSourceRes = await fetch(requestURL);
       const contractSource = await contractSourceRes.json();
-      if (contractSource.message !== 'OK')
-        throw new Error('Failed to fetch contract source code');
 
-      let implementationAddress = vault.address;
+      if (contractSource.message !== 'OK') {
+        console.log(`contractSource: `, contractSource);
+        continue;
+      }
+
+      let name = vault.name;
+      let symbol = vault.symbol;
+      let decimals = vault.decimals;
+      let vaultAbi: AbiParameter[] = [];
+
       if (
-        contractSource.result[0].Implementation &&
-        contractSource.result[0].Implementation !== ''
+        contractSource.result[0].ABI !== 'Contract source code not verified' &&
+        contractSource.result[0].SourceCode !== ''
       ) {
-        implementationAddress = contractSource.result[0].Implementation;
-      }
-
-      const client = createPublicClient({
-        chain: getChain(vault.chainID),
-        transport: http(),
-      });
-      const vaultAbi: AbiParameter[] = await fetchAbi(
-        vault.chainID,
-        getAddress(implementationAddress)
-      );
-      const vaultContract = {
-        address: getAddress(vault.address),
-        abi: vaultAbi,
-      } as const;
-
-      const [nameResult, symbolResult, decimalsResult] = await client.multicall(
-        {
-          contracts: [
-            {
-              ...vaultContract,
-              functionName: 'name',
-            },
-            {
-              ...vaultContract,
-              functionName: 'symbol',
-            },
-            {
-              ...vaultContract,
-              functionName: 'decimals',
-            },
-          ],
+        let implementationAddress = vault.address;
+        if (
+          contractSource.result[0].Implementation &&
+          contractSource.result[0].Implementation !== ''
+        ) {
+          implementationAddress = contractSource.result[0].Implementation;
         }
-      );
-      if (nameResult.status !== 'success') {
-        console.log(`nameResult: `, nameResult);
-        throw new Error('Failed to fetch name');
-      }
-      if (symbolResult.status !== 'success') {
-        console.log(`symbolResult: `, symbolResult);
-        throw new Error('Failed to fetch symbol');
-      }
-      if (decimalsResult.status !== 'success') {
-        console.log(`decimalsResult: `, decimalsResult);
-        throw new Error('Failed to fetch decimals');
+
+        const client = createPublicClient({
+          chain: getChain(vault.chainID),
+          transport: http(),
+        });
+        vaultAbi = await fetchAbi(
+          vault.chainID,
+          getAddress(implementationAddress)
+        );
+        const vaultContract = {
+          address: getAddress(vault.address),
+          abi: vaultAbi,
+        } as const;
+
+        const [nameResult, symbolResult, decimalsResult] =
+          await client.multicall({
+            contracts: [
+              {
+                ...vaultContract,
+                functionName: 'name',
+              },
+              {
+                ...vaultContract,
+                functionName: 'symbol',
+              },
+              {
+                ...vaultContract,
+                functionName: 'decimals',
+              },
+            ],
+          });
+        if (nameResult.status === 'success') {
+          name = nameResult.result as string;
+        }
+        if (symbolResult.status === 'success') {
+          symbol = symbolResult.result as string;
+        }
+        if (decimalsResult.status === 'success') {
+          decimals = decimalsResult.result as number;
+        }
       }
 
       const riskLevel = vault.info.riskLevel;
 
+      const apr = floor(
+        Object.values(vault.apr.extra ?? {}).reduce((acc, value) => {
+          return (acc ?? 0) + (value ?? 0);
+        }, vault.apr.forwardAPR.netAPR),
+        2
+      );
+
       const strategy: Strategy = {
         name: vault.type + ' ' + vault.name,
         chainId: vault.chainID,
+        platformIcon:
+          'https://seeklogo.com/images/Y/yearn-finance-logo-A46504E937-seeklogo.com.png',
         input: {
           name: vault.token.name,
           symbol: vault.token.symbol,
+          tokenIconURL: '',
           address: getAddress(vault.token.address),
           decimals: vault.token.decimals,
         },
@@ -339,20 +368,26 @@ export const yearn: DeFiProtocol = {
           abi: vaultAbi,
         },
         output: {
-          name: nameResult.result as string,
-          symbol: symbolResult.result as string,
+          name,
+          symbol,
+          tokenIconURL: '',
           address: getAddress(vault.address),
-          decimals: decimalsResult.result as number,
+          decimals,
         },
         riskLevel,
         tvl: vault.tvl.tvl,
-        apr: vault.apr.forwardAPR.netAPR,
+        apr,
       };
       strategies.push(strategy);
     }
 
     return strategies;
-  },
+  };
+
+  return {
+    name: 'yearn',
+    getStrategies,
+  };
 };
 
 const sleep = (arg0: number) => {

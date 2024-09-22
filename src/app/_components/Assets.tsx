@@ -11,7 +11,6 @@ export default function Assets() {
   const [balances, setBalances] = useState<Record<string, string>>({});
   const [strategies, setStrategies] = useState<Record<string, Strategy[]>>({});
   const { address, chain } = useAccount();
-
   const allStrategies = useMemo(
     () => Object.values(strategies).flat(),
     // () => [
