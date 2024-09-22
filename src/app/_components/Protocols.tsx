@@ -160,7 +160,7 @@ export default function Protocols() {
       </Flex>
     );
 
-  if (hasNoPosition)
+  if (hasNoPosition || !Object.keys(strategies).length)
     return (
       <Text fontSize="30px" fontFamily="silkscreen" mt="32px">
         Please give me money
